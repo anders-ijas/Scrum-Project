@@ -1,0 +1,15 @@
+body {
+    font-family: Arial, sans-serif; /* Use a modern font */
+    background-color: #f4f4f4; /* Light background for contrast */
+    margin: 0;
+    padding: 0;
+}
+
+.emotion {
+    display: flex; /* Use flexbox for centering */
+    justify-content: center; /* Center horizontally */
+    align-items: center; /* Center vertically */
+    height: 10vh; /* Full viewport height */
+    font-size: 2em; /* Larger text */
+    padding: 20px; /* Add some padding */
+}
