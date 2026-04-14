@@ -5,8 +5,10 @@ import { createRoot } from "react-dom/client";
 import {Root} from "./root.jsx";
 import {fetchData} from "../util.js";
 import { initAnonymousAuth, onAuthReady } from "../firebase_util.js";
+import { saveResult, inita } from "../persistance.js";
 createRoot(document.getElementById('root')).render(<Root model={reactiveModel}/>);
 initAnonymousAuth();
 onAuthReady(() => {
+    inita();
     fetchData();
 });

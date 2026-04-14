@@ -1,19 +1,16 @@
 import { reactiveModel } from "./mobXReactiveModel.js";
 import { db } from "./firebase_util.js";
-import { collection, onSnapshot } from "firebase/firestore";
+import { doc, onSnapshot } from "firebase/firestore";
 
 export function fetchData() {
-    const emotionsRef = collection(db, "emotion");
+    const docRef = doc(db, "emotion", "current");
 
     onSnapshot(
-        emotionsRef,
-        (snapshot) => {
-            if (snapshot.empty) return;
+        docRef,
+        (docSnap) => {
+            if (!docSnap.exists()) return;
 
-            const doc = snapshot.docs[snapshot.docs.length - 1];
-            const data = doc.data();
-            if (!data) return;
-
+            const data = docSnap.data();
             updateModelFromFirestore(data);
         },
         (error) => {
@@ -47,7 +44,6 @@ function updateModelFromFirestore(data) {
 export function parseText(text) {
     const [question, answer, accuracy, emotion] = text.split(";");
     const parsedEmotion = parseEmotion(emotion);
-
     if (
         question === reactiveModel.question &&
         answer === reactiveModel.answer &&
@@ -56,7 +52,6 @@ export function parseText(text) {
     ) {
         return;
     }
-
     reactiveModel.setCurrentQuestion(question);
     reactiveModel.setCurrentAnswer(answer);
     reactiveModel.setCurrentAccuracy(accuracy);
