@@ -7,7 +7,7 @@ export function AppView(props){
         <h2>Säkerhet: {props.accuracy}</h2>
         </div>
         <div class="emotion">
-        <h1>Känsla: {props.emotion}</h1>
+        <h1> {props.emotion}</h1>
         </div>
     </div>
     

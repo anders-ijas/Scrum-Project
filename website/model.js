@@ -1,9 +1,12 @@
+import { set } from "mobx";
+
 export const model = {
     question : "",
     answer: "",
-    accuracy : null,
-    emotion : "",
+    accuracy : "",
+    emotion : "😐",
     rawInput: "",
+    dataStream:false,
     setCurrentQuestion (question){
         this.question = question;
     },
@@ -22,6 +25,9 @@ export const model = {
         this.setCurrentAnswer(answer);
         this.setCurrentAccuracy(accuracy);
         this.setCurrentEmotion(emotion);
+    },
+    setDataStream(stream){
+        this.dataStream = stream;
     }
 
 

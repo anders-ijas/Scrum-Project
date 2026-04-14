@@ -6,10 +6,16 @@ body {
 }
 
 .emotion {
-    display: flex; /* Use flexbox for centering */
-    justify-content: center; /* Center horizontally */
-    align-items: center; /* Center vertically */
-    height: 10vh; /* Full viewport height */
-    font-size: 2em; /* Larger text */
-    padding: 20px; /* Add some padding */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    padding: 40px 0;
+    text-align: center;
+}
+
+.emotion h1 {
+    margin: 0;
+    font-size: 10rem;
+    line-height: 1;
 }
