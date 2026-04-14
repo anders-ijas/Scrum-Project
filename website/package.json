@@ -10,6 +10,7 @@
         "vite": "latest"
     },
     "dependencies": {
+        "firebase": "^12.12.0",
         "mobx": "latest",
         "mobx-react-lite": "latest",
         "react": "latest",
