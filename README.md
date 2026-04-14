@@ -14,6 +14,7 @@ nvm use 22
 npm install 
 ```
 in console
+
 5. Start the server using
 ```bash
  npm run dev
