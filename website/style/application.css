@@ -1,8 +1,22 @@
 body {
-    font-family: Arial, sans-serif; /* Use a modern font */
-    background-color: #f4f4f4; /* Light background for contrast */
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #f5e6d3 0%, #e8d5c4 100%);
     margin: 0;
     padding: 0;
+    color: #5a4a42;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    color: #6b4423;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+}
+
+h2 {
+    font-size: 3rem;
+    margin: 12px 0;
+    font-weight: 400;
+    color: #8b6f47;
 }
 
 .emotion {
@@ -12,10 +26,12 @@ body {
     width: 100%;
     padding: 40px 0;
     text-align: center;
+    margin-top: 30px;
 }
 
 .emotion h1 {
     margin: 0;
     font-size: 10rem;
     line-height: 1;
+    filter: drop-shadow(0 2px 4px rgba(107, 68, 35, 0.2));
 }
