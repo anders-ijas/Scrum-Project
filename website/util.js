@@ -14,10 +14,14 @@ export async function fetchData() {
 export function parseText(text){
     const [question, answer, accuracy, emotion] = text.split(";");
     const parsedEmotion = parseEmotion(emotion);
+    if(question === reactiveModel.question && answer === reactiveModel.answer && accuracy === reactiveModel.accuracy && parsedEmotion === reactiveModel.emotion){
+        return;
+    }
     reactiveModel.setCurrentQuestion(question);
     reactiveModel.setCurrentAnswer(answer);
     reactiveModel.setCurrentAccuracy(accuracy);
     reactiveModel.setCurrentEmotion(parsedEmotion);
+    reactiveModel.setDataStream(true);
 }
 export function parseEmotion(emotion){
     switch(emotion){
