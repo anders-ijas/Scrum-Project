@@ -1,0 +1,40 @@
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Virtual environment
+venv/
+env/
+ENV/
+.venv
+whisper_env/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+dist/
+build/
+*.egg-info/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Output files
+output/
+*.json
+*.txt
+*.srt
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Models (optional - comment out if you want to cache them)
+# whisperx_models/
