@@ -1,37 +1,168 @@
 body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: linear-gradient(135deg, #f5e6d3 0%, #e8d5c4 100%);
-    margin: 0;
-    padding: 0;
-    color: #5a4a42;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: linear-gradient(135deg, #f5e6d3 0%, #e8d5c4 100%);
+  margin: 0;
+  padding: 0;
+  color: #5a4a42;
 }
 
-h1, h2, h3, h4, h5, h6 {
-    color: #6b4423;
-    font-weight: 500;
-    letter-spacing: 0.5px;
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  color: #6b4423;
+  font-weight: 500;
+  letter-spacing: 0.5px;
 }
 
-h2 {
-    font-size: 3rem;
-    margin: 12px 0;
-    font-weight: 400;
-    color: #8b6f47;
+.app-view {
+  width: 100%;
+  padding-top: 16px;
+}
+
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  width: 100%;
+  padding: 0 34px;
+  box-sizing: border-box;
+}
+
+.info-row h2 {
+  margin: 0;
+  font-size: 1.6rem;
+  white-space: nowrap;
 }
 
 .emotion {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    width: 100%;
-    padding: 40px 0;
-    text-align: center;
-    margin-top: 30px;
+  position: fixed;
+  right: 2rem;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 10;
 }
 
-.emotion h1 {
-    margin: 0;
-    font-size: 10rem;
-    line-height: 1;
-    filter: drop-shadow(0 2px 4px rgba(107, 68, 35, 0.2));
+.thermo-wrapper {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+}
+
+.thermo-emoji-col,
+.thermo-label-col {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 64px 0;
+}
+
+.thermo-emoji-col {
+  padding-right: 12px;
+  align-items: center;
+}
+
+.thermo-label-col {
+  padding-left: 16px;
+}
+
+.thermo-cell {
+  height: 88px;
+  display: flex;
+  align-items: center;
+  font-size: 34px;
+}
+
+.thermo-tube {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.thermo-bulb {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+}
+
+.thermo-bulb--top {
+  background: #e24b4a;
+  border: 4px solid #c03535;
+  margin-bottom: -8px;
+  z-index: 2;
+}
+
+.thermo-bulb--bottom {
+  background: #6b4fcf;
+  border: 4px solid #4e38a8;
+  margin-top: -8px;
+  z-index: 2;
+}
+
+.thermo-segments {
+  width: 56px;
+  border-radius: 10px 10px 0 0;
+  overflow: hidden;
+  border: 3px solid #bbb;
+  border-bottom: none;
+}
+
+.thermo-segment {
+  height: 88px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 500;
+  font-size: 26px;
+  color: white;
+}
+
+.thermo-label-name {
+  font-weight: 500;
+  font-size: 20px;
+}
+
+.thermo-label-desc {
+  font-size: 13px;
+  color: #888;
+}
+
+.thermo-arrow-col {
+  position: relative;
+  width: 160px;
+  padding-top: 64px;
+}
+
+.thermo-arrow {
+  position: absolute;
+  right: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  transition: top 0.4s ease;
+  pointer-events: none;
+}
+
+.thermo-arrow-shaft {
+  width: 48px;
+  height: 4px;
+  background: #333;
+}
+
+.thermo-arrow-head {
+  width: 0;
+  height: 0;
+  border-top: 9px solid transparent;
+  border-bottom: 9px solid transparent;
+  border-left: 14px solid #333;
+}
+
+.thermo-arrow-label {
+  font-size: 36px;
+  font-weight: 600;
+  white-space: nowrap;
+  color: #333;
 }
