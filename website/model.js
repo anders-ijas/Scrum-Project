@@ -1,10 +1,10 @@
 import { set } from "mobx";
 
 export const model = {
-    question : "",
-    answer: "",
-    accuracy : "",
-    emotion : "😐",
+    question : "Vad tycker du om min jacka?",
+    answer: "den är jättefin!",
+    accuracy : "0.9",
+    emotion : "Arg",
     rawInput: "",
     dataStream:false,
     setCurrentQuestion (question){
