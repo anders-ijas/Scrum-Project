@@ -6,12 +6,7 @@ body {
   color: #5a4a42;
 }
 
-h1,
-h2,
-h3,
-h4,
-h5,
-h6 {
+h1, h2 {
   color: #6b4423;
   font-weight: 500;
   letter-spacing: 0.5px;
@@ -20,6 +15,7 @@ h6 {
 .app-view {
   width: 100%;
   padding-top: 16px;
+  box-sizing: border-box;
 }
 
 .info-row {
@@ -51,32 +47,100 @@ h6 {
 
 .thermo-wrapper {
   display: flex;
-  align-items: stretch;
+  align-items: flex-start;
   gap: 0;
+  position: relative;
 }
 
-.thermo-emoji-col,
-.thermo-label-col {
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  padding: 64px 0;
+.thermo-arrow-col {
+  position: relative;
+  width: 160px;
+  height: 660px; /* Fixerad höjd för att låsa koordinatsystemet */
 }
 
-.thermo-emoji-col {
-  padding-right: 12px;
-  align-items: center;
-}
-
-.thermo-label-col {
-  padding-left: 16px;
-}
-
-.thermo-cell {
-  height: 88px;
+/* Den svarta huvudpilen */
+.thermo-arrow {
+  position: absolute;
+  right: 0;
   display: flex;
   align-items: center;
-  font-size: 34px;
+  gap: 12px;
+  transition: top 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  transform: translateY(-50%);
+  pointer-events: none;
+  z-index: 10;
+}
+
+.thermo-arrow-shaft {
+  width: 40px;
+  height: 4px;
+  background: #333;
+}
+
+.thermo-arrow-head {
+  width: 0;
+  height: 0;
+  border-top: 9px solid transparent;
+  border-bottom: 9px solid transparent;
+  border-left: 14px solid #333;
+}
+
+.thermo-arrow-label {
+  font-size: 24px;
+  font-weight: 600;
+  color: #333;
+}
+
+/* Den grå jämförelsepilen */
+.thermo-compare-arrow {
+  position: absolute;
+  left: 40px; 
+  width: 16px;
+  pointer-events: none;
+  /* Vi animerar både topp och botten för att sträcka ut pilen */
+  transition: top 0.4s ease, bottom 0.4s ease;
+}
+
+.thermo-compare-shaft {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 3px;
+  top: 0;
+  bottom: 0;
+  background: #888;
+}
+
+.thermo-compare-tail, .thermo-compare-head {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+}
+
+.thermo-compare-tail {
+  width: 14px;
+  height: 4px;
+  background: #888;
+}
+
+/* Logik för pilar som pekar NEDÅT (Index ökar) */
+.thermo-compare-arrow--down .thermo-compare-tail { top: -2px; }
+.thermo-compare-arrow--down .thermo-compare-head { 
+  bottom: -4px; 
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+  border-top: 12px solid #888;
+}
+
+/* Logik för pilar som pekar UPPÅT (Index minskar) */
+.thermo-compare-arrow--up .thermo-compare-tail { bottom: -2px; }
+.thermo-compare-arrow--up .thermo-compare-head { 
+  top: -4px; 
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+  border-bottom: 12px solid #888;
 }
 
 .thermo-tube {
@@ -89,6 +153,7 @@ h6 {
   width: 72px;
   height: 72px;
   border-radius: 50%;
+  box-sizing: border-box;
 }
 
 .thermo-bulb--top {
@@ -107,10 +172,10 @@ h6 {
 
 .thermo-segments {
   width: 56px;
-  border-radius: 10px 10px 0 0;
-  overflow: hidden;
   border: 3px solid #bbb;
   border-bottom: none;
+  background: #eee;
+  box-sizing: border-box;
 }
 
 .thermo-segment {
@@ -123,98 +188,20 @@ h6 {
   color: white;
 }
 
+.thermo-label-col {
+  display: flex;
+  flex-direction: column;
+  padding-top: 67px;
+}
+
+.thermo-cell {
+  height: 88px;
+  display: flex;
+  align-items: center;
+  padding-left: 16px;
+}
+
 .thermo-label-name {
   font-weight: 500;
   font-size: 20px;
-}
-
-.thermo-label-desc {
-  font-size: 13px;
-  color: #888;
-}
-
-.thermo-arrow-col {
-  position: relative;
-  width: 160px;
-  padding-top: 64px;
-}
-
-.thermo-arrow {
-  position: absolute;
-  right: 0;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  transition: top 0.4s ease;
-  pointer-events: none;
-}
-
-.thermo-arrow-shaft {
-  width: 48px;
-  height: 4px;
-  background: #333;
-}
-
-.thermo-arrow-head {
-  width: 0;
-  height: 0;
-  border-top: 9px solid transparent;
-  border-bottom: 9px solid transparent;
-  border-left: 14px solid #333;
-}
-
-.thermo-arrow-label {
-  font-size: 24px;
-  font-weight: 600;
-  white-space: nowrap;
-  color: #333;
-}
-
-@media (max-width: 768px) {
-  .emotion {
-    position: static;
-    margin-top: 20px;
-  }
-
-  .thermo-wrapper {
-    width: 60%;
-    margin: 0 auto;
-  }
-
-  .thermo-arrow-col {
-    width: 80px;
-  }
-
-  .thermo-tube {
-    width: 40px;
-  }
-
-  .thermo-segments {
-    width: 40px;
-  }
-
-  .thermo-bulb {
-    width: 50px;
-    height: 50px;
-  }
-
-  .thermo-cell {
-    height: 60px;
-  }
-
-  .thermo-label-name {
-    font-size: 14px;
-  }
-
-  .thermo-arrow-shaft {
-    width: 30px;
-  }
-
-  .thermo-arrow-head {
-    border-left-width: 10px;
-  }
-
-  .thermo-arrow-label {
-    font-size: 18px;
-  }
 }
