@@ -9,7 +9,7 @@ const EMOTIONS = [
   { level: 5, emoji: "😊", label: "Glad", labelColor: "#4e38a8" },
 ];
 
-const EMOJI_TO_INDEX = { "😡": 0, "😠": 1, "😢": 2,"😨":3,"🤢":3, "😲":4, "😐": 4, "😊": 5 };
+const EMOJI_TO_INDEX = { "😡": 0, "😠": 1, "😢": 2, "😨": 3, "🤢": 3, "😲": 4, "😐": 4, "😊": 5 };
 const CELL_HEIGHT = 88;
 const START_Y = 67; 
 const TOTAL_COL_HEIGHT = 660;
@@ -27,12 +27,13 @@ function EmotionalThermometer({ emotion, previousEmotion }) {
   const bottomBoundary = Math.max(currentY, previousY);
 
   return (
-    <div className="thermo-wrapper">
+    /* Fixat: Lagt till mellanrum och korrekt template literal för wrapper-färgerna */
+    <div className={`thermo-wrapper ${currentIndex < 4 ? "thermo-wrapper--negative" : "thermo-wrapper--positive"}`}>
       <div className="thermo-arrow-col">
         {/* Grå Jämförelsepil */}
         {previousEmotion && emotion !== previousEmotion && (
           <div
-            className={`thermo-compare-arrow ${pointsDown ? "thermo-compar e-arrow--down" : "thermo-compare-arrow--up"}`}
+            className={`thermo-compare-arrow ${pointsDown ? "thermo-compare-arrow--down" : "thermo-compare-arrow--up"}`}
             style={{
               top: `${topBoundary}px`,
               bottom: `${TOTAL_COL_HEIGHT - bottomBoundary}px`
@@ -82,8 +83,13 @@ function EmotionalThermometer({ emotion, previousEmotion }) {
 }
 
 export function AppView(props) {
+  /* Beräknar om den nuvarande känslan ska trigga röd (negativ) eller grön (positiv) ram */
+  const currentIndex = EMOJI_TO_INDEX[props.emotion] ?? 4;
+  const isNegative = currentIndex < 4;
+
   return (
-    <div className="app-view">
+    /* Applicerar klassen på yttersta div:en för att styra skärmkanten */
+    <div className={`app-view ${isNegative ? "status--negative" : "status--positive"}`}>
       <div className="info-row">
         <h2>Senaste Fråga: {props.question}</h2>
         <h2>Senaste Svar: {props.answer}</h2>
