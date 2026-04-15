@@ -4,8 +4,16 @@ Den kan transkribera meningar relativt bra.
 Den kan identifiera frågor (med frågetecken)
 Det går och bestämma hur många talare som förväntas i inspelningen. 
 Den kan identiferea olika talare. 
-FYLL I LÖPANDE
-Hur lång tid tar det för den att analysera en fil ?
+
+- Minne och prestanda FYLL I LÖPANDE.
+Hur lång tid tar det för den att analysera en fil ? (ex 30 s tar så långt, 40 s tar så långt, finns det nåt samband?)
+
+Hur mycket minne krävs för att ladda ner allt som behövs till modellen? 
+
+
 
 - Hur hanterar den olika felkällor? 
 Fyll i med formatet (Sak du undersökt : Hur den hanterar det) Ex (Röster i bakgrunden : Den kan ignorera röster i bakgrunden så länge de inte når upp till X ljudnivå ) 
+
+
+- Klista in länk till de modeller du använt och uppdatera löpande. 
