@@ -93,6 +93,12 @@ export function parseEmotion(emotion) {
             return "😢";
         case "Arg":
             return "😠";
+        case "Rädd":
+            return "😨";
+        case "Äcklad":
+            return "🤢";
+        case "Förvånad":
+            return "😲";
         default:
             return "😐";
     }

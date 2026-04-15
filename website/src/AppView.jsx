@@ -4,12 +4,12 @@ const EMOTIONS = [
   { level: 0, emoji: "😡", label: "Rasande", labelColor: "#E24B4A" },
   { level: 1, emoji: "😠", label: "Arg", labelColor: "#E07030" },
   { level: 2, emoji: "😢", label: "Ledsen", labelColor: "#c8a000" },
-  { level: 3, emoji: "😟", label: "Oroad", labelColor: "#3a8f30" },
-  { level: 4, emoji: "😐", label: "Ok", labelColor: "#2077b0" },
+  { level: 3, emoji: "😟", label: "Oroad/Äcklad", labelColor: "#3a8f30" },
+  { level: 4, emoji: "😐", label: "Ok, Överraskad", labelColor: "#2077b0" },
   { level: 5, emoji: "😊", label: "Glad", labelColor: "#4e38a8" },
 ];
 
-const EMOJI_TO_INDEX = { "😡": 0, "😠": 1, "😢": 2, "😐": 4, "😊": 5 };
+const EMOJI_TO_INDEX = { "😡": 0, "😠": 1, "😢": 2,"😨":3,"🤢":3, "😲":4, "😐": 4, "😊": 5 };
 const CELL_HEIGHT = 88;
 const START_Y = 67; 
 const TOTAL_COL_HEIGHT = 660;
@@ -18,13 +18,11 @@ function EmotionalThermometer({ emotion, previousEmotion }) {
   const currentIndex = EMOJI_TO_INDEX[emotion] ?? 4;
   const previousIndex = EMOJI_TO_INDEX[previousEmotion] ?? 4;
   
-  // Mittpunkten för varje känsla i pixlar från toppen
   const currentY = START_Y + (currentIndex * CELL_HEIGHT) + (CELL_HEIGHT / 2);
   const previousY = START_Y + (previousIndex * CELL_HEIGHT) + (CELL_HEIGHT / 2);
   
   const pointsDown = currentY > previousY;
   
-  // Vi definierar spannet mellan förra och nuvarande
   const topBoundary = Math.min(currentY, previousY);
   const bottomBoundary = Math.max(currentY, previousY);
 
@@ -34,7 +32,7 @@ function EmotionalThermometer({ emotion, previousEmotion }) {
         {/* Grå Jämförelsepil */}
         {previousEmotion && emotion !== previousEmotion && (
           <div
-            className={`thermo-compare-arrow ${pointsDown ? "thermo-compare-arrow--down" : "thermo-compare-arrow--up"}`}
+            className={`thermo-compare-arrow ${pointsDown ? "thermo-compar e-arrow--down" : "thermo-compare-arrow--up"}`}
             style={{
               top: `${topBoundary}px`,
               bottom: `${TOTAL_COL_HEIGHT - bottomBoundary}px`
@@ -50,7 +48,7 @@ function EmotionalThermometer({ emotion, previousEmotion }) {
         <div className="thermo-arrow" style={{ top: `${currentY}px` }}>
           <div className="thermo-arrow-shaft" />
           <div className="thermo-arrow-head" />
-          <div className="thermo-arrow-label">{EMOTIONS[currentIndex].emoji}</div>
+          <div className="thermo-arrow-label">{emotion}</div>
         </div>
       </div>
 
