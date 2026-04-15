@@ -1,9 +1,7 @@
 body {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  background: linear-gradient(135deg, #f5e6d3 0%, #e8d5c4 100%);
   margin: 0;
   padding: 0;
-  color: #5a4a42;
 }
 
 h1,
@@ -12,7 +10,6 @@ h3,
 h4,
 h5,
 h6 {
-  color: #6b4423;
   font-weight: 500;
   letter-spacing: 0.5px;
 }
@@ -26,10 +23,13 @@ h6 {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 1rem;
+  gap: 2rem;
   width: 100%;
-  padding: 0 34px;
+  padding: 0 24px;
   box-sizing: border-box;
+  border-bottom: 2px solid #8b6f47;
+  padding-bottom: 16px;
+  margin-bottom: 16px;
 }
 
 .info-row h2 {
@@ -165,4 +165,22 @@ h6 {
   font-weight: 600;
   white-space: nowrap;
   color: #333;
+}
+ /* Update in application.css */
+:root {
+  --bg-color: #f8fafc;
+  --card-bg: #ffffff;
+  --text-main: #1e293b;
+  --text-muted: #64748b;
+  --accent-color: #6b4fcf;
+  --radius: 16px;
+  --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background-color: var(--bg-color);
+  color: var(--text-main);
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
 }
