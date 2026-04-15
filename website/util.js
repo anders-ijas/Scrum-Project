@@ -2,7 +2,11 @@ import { reactiveModel } from "./mobXReactiveModel.js";
 import { db } from "./firebase_util.js";
 import { doc, onSnapshot } from "firebase/firestore";
 
+// REMOVED: LOCAL_PREVIOUS_SNAPSHOT_KEY constant
+
 export function fetchData() {
+    // REMOVED: loadPreviousSnapshot() call, as we want to start fresh every session
+
     const docRef = doc(db, "emotion", "current");
 
     onSnapshot(
@@ -17,6 +21,21 @@ export function fetchData() {
             console.error("Firestore listener error:", error);
         }
     );
+}
+
+// Rewritten to only move current values to the model's snapshot property in memory
+function shiftCurrentToPrevious() {
+    const snapshot = {
+        question: reactiveModel.question,
+        answer: reactiveModel.answer,
+        accuracy: reactiveModel.accuracy,
+        emotion: reactiveModel.emotion,
+        rawInput: reactiveModel.rawInput ?? "",
+        timestamp: new Date().toISOString()
+    };
+
+    // Only update the model's state; do not touch localStorage
+    reactiveModel.setLatestSnapshot(snapshot);
 }
 
 function updateModelFromFirestore(data) {
@@ -34,6 +53,12 @@ function updateModelFromFirestore(data) {
         return;
     }
 
+    // If dataStream is true, it means we already have "current" data.
+    // Move that current data to the "previous" snapshot before updating with new Firestore values.
+    if (reactiveModel.dataStream) {
+        shiftCurrentToPrevious();
+    }
+
     reactiveModel.setCurrentQuestion(question);
     reactiveModel.setCurrentAnswer(answer);
     reactiveModel.setCurrentAccuracy(accuracy);
@@ -41,6 +66,7 @@ function updateModelFromFirestore(data) {
     reactiveModel.setDataStream(true);
 }
 
+// ... rest of your parseText and parseEmotion functions remain the same
 export function parseText(text) {
     const [question, answer, accuracy, emotion] = text.split(";");
     const parsedEmotion = parseEmotion(emotion);

@@ -1,12 +1,20 @@
 import { set } from "mobx";
 
 export const model = {
-    question : "Vad tycker du om min jacka?",
-    answer: "den är jättefin!",
-    accuracy : "0.9",
-    emotion : "Arg",
+    question : "",
+    answer: "",
+    accuracy : "",
+    emotion : "😐",
     rawInput: "",
     dataStream:false,
+    latestSnapshot: {
+        question : "",
+        answer: "",
+        accuracy : "",
+        emotion : "",
+        rawInput: "",
+        timestamp: null
+    },
     setCurrentQuestion (question){
         this.question = question;
     },
@@ -19,6 +27,9 @@ export const model = {
     setCurrentEmotion(emotion){
         this.emotion = emotion;
     },
+    setLatestSnapshot(snapshot) {
+        this.latestSnapshot = snapshot;
+    },
     parseText(text){
         const [question, answer, accuracy, emotion] = text.split(";");
         this.setCurrentQuestion(question);
@@ -29,6 +40,4 @@ export const model = {
     setDataStream(stream){
         this.dataStream = stream;
     }
-
-
 }
