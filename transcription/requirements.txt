@@ -1,0 +1,7 @@
+# Python 3.12 required (does not work with 3.14)
+# Install with: pip install -r requirements.txt
+
+whisperx==3.8.5
+python-dotenv==1.0.0
+torch==2.8.0
+torchaudio==2.8.0
