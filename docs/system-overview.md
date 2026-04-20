@@ -12,8 +12,7 @@ Systemet består av:
 1. Den vuxna klickar på knappen för att börja spela in. 
 LOOP[ If not "stop button pressed"
 2. Pi skickar live kamerafeed till PC och spelar in samtalet
-3. PC analyserar:
-   - ansiktsuttryck (emotion)
+3. PC analyserar:ansiktsuttryck (emotion)   
 4a. PC skickar kontinueligt data till websidan för att visa live emotion. 
 4b. PC sparar "nånstans" vad som registrerats och timestamps.
 ]
