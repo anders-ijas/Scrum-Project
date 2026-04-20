@@ -1,3 +1,8 @@
+# Allow requirements files
+!requirements_common.txt
+!requirements_cpu.txt
+!requirements_gpu.txt
+
 # Environment variables
 .env
 .env.local

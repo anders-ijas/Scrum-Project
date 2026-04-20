@@ -18,6 +18,7 @@ This is a module within the larger project. It handles audio transcription and s
 ## Prerequisites
 
 - **Python 3.12** (required; does not work with Python 3.14)
+- **FFmpeg** (required for audio processing)
 - CPU or CUDA capable GPU (optional, but recommended)
 
 ## Setup
@@ -44,16 +45,26 @@ venv\Scripts\activate
 
 ### 2. Install dependencies
 
+The project includes three requirements files for different hardware setups:
+
+| File | Purpose |
+|------|---------|
+| `requirements_common.txt` | Base dependencies (whisperx, python-dotenv) |
+| `requirements_cpu.txt` | PyTorch for CPU (works on any computer) |
+| `requirements_gpu.txt` | PyTorch for NVIDIA GPU with CUDA 12.6 |
+
+**Choose your hardware (install in this order):**
+
+**For CPU (works on any computer):**
 ```bash
-pip install -r requirements.txt
+pip install -r requirements_cpu.txt
+pip install -r requirements_common.txt
 ```
 
-These packages will be installed:
-```
-whisperx==3.8.5
-python-dotenv==1.0.0
-torch==2.8.0
-torchaudio==2.8.0
+**For GPU (NVIDIA, faster):**
+```bash
+pip install -r requirements_gpu.txt
+pip install -r requirements_common.txt
 ```
 
 ### 3. Get Hugging Face token
