@@ -1,8 +1,3 @@
-# Allow requirements files
-!requirements_common.txt
-!requirements_cpu.txt
-!requirements_gpu.txt
-
 # Environment variables
 .env
 .env.local
@@ -36,6 +31,15 @@ output/
 *.json
 *.txt
 *.srt
+
+# Allow requirements files
+!requirements_common.txt
+!requirements_cpu.txt
+!requirements_gpu.txt
+
+# Audio files
+*.mp3
+*.wav
 
 # OS
 .DS_Store

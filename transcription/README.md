@@ -8,12 +8,9 @@ This is a module within the larger project. It handles audio transcription and s
 - High-quality transcription (Whisper large-v3-turbo model)
 - Automatic speaker identification (diarization)
 - Word-level alignment
-- Multiple output formats: JSON, TXT, SRT
 
-**Output formats:**
-- **JSON**: Full segment data with timings and speaker labels
-- **TXT**: Human-readable format with speaker labels
-- **SRT**: Subtitle format (compatible with video players)
+**Output format:**
+- **JSON**: Complete transcription with word-level timestamps and speaker labels
 
 ## Prerequisites
 
@@ -23,12 +20,35 @@ This is a module within the larger project. It handles audio transcription and s
 
 ## Setup
 
-### 1. Create virtual environment
+### 1. Install FFmpeg
 
-From the module directory:
+**Windows (using winget):**
+```bash
+winget install FFmpeg
+```
+
+**Linux:**
+```bash
+sudo apt update
+sudo apt install ffmpeg
+```
+
+**macOS (Homebrew):**
+```bash
+brew install ffmpeg
+```
+
+**Verify FFmpeg installation:**
+```bash
+ffmpeg -version
+```
+
+### 2. Create virtual environment
+
+From the `transcription/` directory:
 
 ```bash
-python3.12 -m venv venv
+python -m venv venv
 ```
 
 **Activate virtual environment:**
@@ -43,7 +63,7 @@ source venv/bin/activate
 venv\Scripts\activate
 ```
 
-### 2. Install dependencies
+### 3. Install dependencies
 
 The project includes three requirements files for different hardware setups:
 
@@ -67,15 +87,15 @@ pip install -r requirements_gpu.txt
 pip install -r requirements_common.txt
 ```
 
-### 3. Get Hugging Face token
+### 4. Get Hugging Face token
 
 1. Go to https://huggingface.co/settings/tokens
 2. Create a new token (read access is enough)
 3. Copy the token
 
-### 4. Configure environment
+### 5. Configure environment
 
-Create a `.env` file in the `whisper_transcription/` directory:
+Create a `.env` file in the `transcription/` directory:
 
 ```
 HF_TOKEN=hf_your_actual_token_here
@@ -84,43 +104,31 @@ HF_TOKEN=hf_your_actual_token_here
 **Note:** The `.env` file is in `.gitignore` and should never be committed.
 
 ## Usage
-
-From the project root:
-
 ```bash
-python whisper_transcription/transcribe.py <audio_file>
+python transcribe.py <audio_file>
 ```
 
 **Examples:**
 ```bash
-python whisper_transcription/transcribe.py meeting.mp3
-python whisper_transcription/transcribe.py lectures/lecture_01.wav
+python transcribe.py meeting.mp3
+python transcribe.py lectures/lecture_01.wav
 ```
 
-**Supported formats:** MP3
+**Supported formats:** MP3, WAV
 
 ### Output
 
-Files are saved in `whisper_transcription/output/`:
+Files are saved in `transcription/output/`:
 - `filename.json` - Full transcription data
-- `filename.txt` - Readable text format
-- `filename.srt` - Subtitle format
-
-**Example output (TXT):**
-```
-[SPEAKER_00]: Hello, how are you?
-[SPEAKER_01]: I'm doing great, thanks for asking.
-[SPEAKER_00]: That's wonderful to hear.
-```
 
 ## Configuration
 
 Edit the top of `transcribe.py` to adjust:
 
 ```python
-LANGUAGE = "en"           # Language code: "en", "sv", "fr", etc.
-DEVICE = "cpu"            # "cuda" for GPU, "cpu" for CPU
-COMPUTE_TYPE = "int8"     # "int8", "float16", "float32"
+LANGUAGE = "sv"           # Language code: "en", "sv", "fr", etc.
+DEVICE = "cuda"            # "cuda" for GPU, "cpu" for CPU
+COMPUTE_TYPE = "float32"     # "int8", "float16", "float32"
 ```
 
 ### Performance notes:
@@ -131,8 +139,13 @@ COMPUTE_TYPE = "int8"     # "int8", "float16", "float32"
 
 ## Troubleshooting
 
+### "FFmpeg not found" or "FileNotFoundError"
+- FFmpeg is not installed or not in your PATH
+- Follow the FFmpeg installation instructions above
+- Restart your terminal after installing
+
 ### "HF_TOKEN not found"
-- Make sure `.env` file exists in the `whisper_transcription/` directory
+- Make sure `.env` file exists in the `transcription/` directory
 - Verify the token is correctly set
 - Make sure `python-dotenv` is installed
 
