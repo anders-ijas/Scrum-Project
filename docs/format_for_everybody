@@ -1,0 +1,32 @@
+Format för vad som kommenereras ur transcript.:
+{
+  "sessionId": "abc123",
+  "eventType": "transcript_final",
+  "language": "sv",
+  "durationMs": 7725,
+  "speakers": {
+    "SPEAKER_00": {
+      "role": "adult"
+    }
+  },
+  "segments": [
+    {
+      "segmentId": "seg_001",
+      "speakerLabel": "SPEAKER_00",
+      "role": "adult",
+      "text": "Det ser inte bra ut va?",
+      "startMs": 591,
+      "endMs": 1715,
+      "durationMs": 1124
+    },
+    {
+      "segmentId": "seg_002",
+      "speakerLabel": "SPEAKER_00",
+      "role": "adult",
+      "text": "Hon måste ha ändrat dem efter att ritningarna gjordes.",
+      "startMs": 4424,
+      "endMs": 6813,
+      "durationMs": 2389
+    }
+  ]
+}
