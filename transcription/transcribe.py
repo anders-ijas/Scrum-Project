@@ -2,6 +2,7 @@ import os
 import json
 import sys
 import gc
+import uuid
 from dotenv import load_dotenv
 import whisperx
 from whisperx.diarize import DiarizationPipeline
@@ -33,6 +34,8 @@ BATCH_SIZE   = 16          # Adjust based on GPU memory
 print("Loading audio...")
 audio = whisperx.load_audio(AUDIO_FILE)
 audio_duration = len(audio) / 16000
+if audio_duration < 10:
+    print(f"Warning: short audio ({audio_duration:.2f}s) diarization may be inaccurate.")
 
 # 1. Transcribe
 print("Loading Whisper model...")
@@ -82,7 +85,7 @@ for seg in result["segments"]:
                 speaker_map[speaker] = f"okänd_{speaker_index}"
             speaker_index += 1
 
-# 5. Build transcript (sentence level) - EXACTLY as you have it
+# 5. Build transcript (sentence level)
 transcript = []
 for seg in result["segments"]:
     if not seg.get("words"):
@@ -103,35 +106,36 @@ for seg in result["segments"]:
         "duration": round(end_time - start_time, 3)
     })
 
-# 6. Build word segments (word level) - ADDED at the end
-word_segments = []
-for seg in result["segments"]:
-    for word in seg.get("words", []):
-        speaker_raw = word.get("speaker", "UNKNOWN")
-        speaker_name = speaker_map.get(speaker_raw, speaker_raw)
-        
-        word_segments.append({
-            "word": word["word"],
-            "speaker": speaker_name,
-            "start": round(word["start"], 3),
-            "end": round(word["end"], 3)
-        })
+# 6. Build complete output
+# SESSION_ID sätts av den som startar sessionen (inte här).
+# Samma ID används av emotion och alignment. Fallback endast för testning.
+session_id = os.getenv("SESSION_ID", str(uuid.uuid4()))
 
-# 7. Build complete output
+segments = []
+for i, seg in enumerate(transcript):
+    segments.append({
+        "segmentId": f"seg_{i+1:03}",
+        "speakerLabel": next((k for k, v in speaker_map.items() if v == seg["speaker"]), "UNKNOWN"),
+        "role": seg["speaker"],
+        "text": seg["text"],
+        "startMs": round(seg["start"] * 1000),
+        "endMs": round(seg["end"] * 1000),
+        "durationMs": round(seg["duration"] * 1000)
+    })
+
 output_data = {
-    "metadata": {
-        "audio_file": os.path.basename(AUDIO_FILE),
-        "language": LANGUAGE,
-        "duration_seconds": round(audio_duration, 3),
-        "total_words": len(word_segments),
-        "total_sentences": len(transcript)
+    "sessionId": session_id,
+    "eventType": "transcript_final",
+    "language": LANGUAGE,
+    "durationMs": round(audio_duration * 1000),
+    "speakers": {
+        label: {"role": role}
+        for label, role in speaker_map.items()
     },
-    "speakers": speaker_map,
-    "transcript": transcript,
-    "word_segments": word_segments      # <-- WORD LEVEL ADDED HERE
+    "segments": segments
 }
 
-# 8. Save JSON output
+# 7. Save JSON output
 base = os.path.splitext(os.path.basename(AUDIO_FILE))[0]
 json_path = os.path.join(OUTPUT_DIR, f"{base}.json")
 
@@ -139,7 +143,7 @@ with open(json_path, "w", encoding="utf-8") as f:
     json.dump(output_data, f, ensure_ascii=False, indent=2)
 
 print(f"\n  Saved: {json_path}")
-print(f"    Duration: {output_data['metadata']['duration_seconds']} seconds")
-print(f"    Sentences: {output_data['metadata']['total_sentences']}")
-print(f"    Words: {output_data['metadata']['total_words']}")
+print(f"    Session: {output_data['sessionId']}")
+print(f"    Duration: {output_data['durationMs']}ms")
+print(f"    Segments: {len(segments)}")
 print(f"    Speakers: {list(speaker_map.values())}")
