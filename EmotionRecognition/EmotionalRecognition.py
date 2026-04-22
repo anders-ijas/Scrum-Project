@@ -14,7 +14,9 @@ import numpy as np
 import matplotlib.pylab as plt
 import cv2
 from PIL import Image, ImageTk
+from emotionIntegration import FirebaseLogger
 
+firebase_logger = FirebaseLogger("../integration/service-account.json")
 
 camera = cv2.VideoCapture(0)
 frame_width = int(camera.get(cv2.CAP_PROP_FRAME_WIDTH))
@@ -116,6 +118,10 @@ def CameraStream():
         face = frame[y:y+h, x:x+w]
 
         prediction = PredictionFaces(face,2)
+        max_idx = np.argmax(prediction)
+        last_label = mapper[max_idx]
+        accuracy = prediction[max_idx]
+        fb_logger.update_current_emotion(last_label, accuracy)
         print(prediction)
         print(f'Print ArgMax: {np.argmax(prediction)}')
 
