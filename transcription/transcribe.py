@@ -3,147 +3,316 @@ import json
 import sys
 import gc
 import uuid
+import traceback
+import warnings
+from datetime import datetime
 from dotenv import load_dotenv
 import whisperx
 from whisperx.diarize import DiarizationPipeline
 
-# Load environment variables
-load_dotenv()
+warnings.filterwarnings("ignore", category=UserWarning, module="pyannote.audio.core.io")
 
-# Config
-HF_TOKEN = os.getenv("HF_TOKEN")
-if not HF_TOKEN:
-    print("Error: HF_TOKEN not found in .env file")
-    sys.exit(1)
+load_dotenv()
 
 LANGUAGE   = "sv"
 OUTPUT_DIR = "output"
 
-if len(sys.argv) < 2:
-    print("Usage: python transcribe.py <audio_file.mp3>")
+def error_exit(message, details=None, session_id=None):
+    """Visa felmeddelande i JSON-format och avsluta"""
+    error_data = {
+        "status": "error",
+        "error": message,
+        "timestamp": datetime.now().isoformat()
+    }
+    if session_id:
+        error_data["sessionId"] = session_id
+    if details:
+        error_data["details"] = details
+    
+    print(json.dumps(error_data, ensure_ascii=False))
+    
+    try:
+        os.makedirs(OUTPUT_DIR, exist_ok=True)
+        error_path = os.path.join(OUTPUT_DIR, f"error_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json")
+        with open(error_path, "w", encoding="utf-8") as f:
+            json.dump(error_data, f, ensure_ascii=False, indent=2)
+        print(f"Error saved to: {error_path}", file=sys.stderr)
+    except Exception as e:
+        print(f"Failed to save error file: {str(e)}", file=sys.stderr)
+    
     sys.exit(1)
 
+def warning_msg(message, session_id=None):
+    """Visa varning i JSON-format"""
+    warning_data = {
+        "status": "warning",
+        "warning": message,
+        "timestamp": datetime.now().isoformat()
+    }
+    if session_id:
+        warning_data["sessionId"] = session_id
+    print(json.dumps(warning_data, ensure_ascii=False), file=sys.stderr)
+
+
+HF_TOKEN = os.getenv("HF_TOKEN")
+if not HF_TOKEN:
+    error_exit("HF_TOKEN not found in .env file", "Please create a .env file with your Hugging Face token")
+
+if len(sys.argv) < 2:
+    error_exit("Missing audio file argument", "Usage: python transcribe.py <audio_file> [session_id]")
+
+# session_id kan skickas in som andra argument, annars genereras unikt ID
+if len(sys.argv) > 2:
+    session_id = sys.argv[2]
+else:
+    session_id = str(uuid.uuid4())
+    warning_msg(f"No session ID provided, using generated: {session_id}")
+
 AUDIO_FILE = sys.argv[1]
-os.makedirs(OUTPUT_DIR, exist_ok=True)
+
+if not os.path.exists(AUDIO_FILE):
+    error_exit(f"Audio file not found: {AUDIO_FILE}", session_id=session_id)
+
+if not os.path.isfile(AUDIO_FILE):
+    error_exit(f"Not a file: {AUDIO_FILE}", session_id=session_id)
+
+file_size = os.path.getsize(AUDIO_FILE)
+if file_size > 100 * 1024 * 1024:
+    error_exit(f"Audio file too large: {file_size / 1024 / 1024:.1f}MB (max 100MB)", session_id=session_id)
+
+if file_size == 0:
+    error_exit(f"Audio file is empty: {AUDIO_FILE}", session_id=session_id)
+
+try:
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
+except Exception as e:
+    error_exit(f"Cannot create output directory: {OUTPUT_DIR}", str(e), session_id)
 
 DEVICE       = "cuda"      # or "cpu"
 COMPUTE_TYPE = "float16"   # or "int8" for CPU
-BATCH_SIZE   = 16          # Adjust based on GPU memory
+BATCH_SIZE   = 16
 
-# Load audio
-print("Loading audio...")
-audio = whisperx.load_audio(AUDIO_FILE)
-audio_duration = len(audio) / 16000
-if audio_duration < 10:
-    print(f"Warning: short audio ({audio_duration:.2f}s) diarization may be inaccurate.")
+# CUDA kanske inte finns, faller tillbaka till CPU om så är fallet
+if DEVICE == "cuda":
+    try:
+        import torch
+        if not torch.cuda.is_available():
+            warning_msg("CUDA not available, falling back to CPU", session_id)
+            DEVICE = "cpu"
+            COMPUTE_TYPE = "int8"
+            BATCH_SIZE = 1
+    except ImportError:
+        warning_msg("PyTorch not installed, will use CPU", session_id)
+        DEVICE = "cpu"
+        COMPUTE_TYPE = "int8"
+        BATCH_SIZE = 1
 
-# 1. Transcribe
-print("Loading Whisper model...")
-model = whisperx.load_model("large-v3-turbo", DEVICE, compute_type=COMPUTE_TYPE)
-print("Transcribing...")
-result = model.transcribe(audio, language=LANGUAGE, batch_size=BATCH_SIZE)
+print(f"Using device: {DEVICE}", file=sys.stderr)
 
-gc.collect()
-del model
 
-# 2. Align (improves word timestamps)
-print("Aligning...")
-model_a, metadata = whisperx.load_align_model(
-    language_code=result["language"],
-    device=DEVICE,
-    model_name="WAV2VEC2_ASR_LARGE_LV60K_960H"
-)
-result = whisperx.align(
-    result["segments"], model_a, metadata, audio, DEVICE, return_char_alignments=False
-)
+try: 
+    print("Loading audio...")
+    audio = whisperx.load_audio(AUDIO_FILE)
+    audio_duration = len(audio) / 16000
+    print(f"Audio duration: {audio_duration:.2f} seconds", file=sys.stderr)
 
-gc.collect()
-del model_a
+    # Varning för mycket korta ljudfiler där diarization kan vara opålitlig
+    if audio_duration < 10:
+        warning_msg(f"Audio duration is very short: {audio_duration:.2f} seconds - diarization may be inaccurate.", session_id)
 
-# 3. Diarize (identify speakers)
-print("Diarizing...")
-diarize_model = DiarizationPipeline(
-    model_name="pyannote/speaker-diarization-community-1",
-    token=HF_TOKEN,
-    device=DEVICE,
-)
-diarize_segments = diarize_model(audio, min_speakers=2, max_speakers=2)
-result = whisperx.assign_word_speakers(diarize_segments, result)
+    # Steg 1: Transkribera
+    print("Loading Whisper model...")
+    model = whisperx.load_model("large-v3-turbo", DEVICE, compute_type=COMPUTE_TYPE)
+    
+    print("Transcribing...", file=sys.stderr)
+    result = model.transcribe(audio, language=LANGUAGE, batch_size=BATCH_SIZE)
 
-# 4. Map speakers to friendly names
-speaker_map = {}
-speaker_index = 0
-speaker_names = ["vuxen", "barn", "okänd_1", "okänd_2"]
+    if not result.get("segments") or len(result["segments"]) == 0:
+        warning_msg("No speech found in audio", session_id)
+        result["segments"] = []
 
-for seg in result["segments"]:
-    for word in seg.get("words", []):
-        speaker = word.get("speaker", "UNKNOWN")
-        if speaker not in speaker_map:
-            if speaker_index < len(speaker_names):
-                speaker_map[speaker] = speaker_names[speaker_index]
+    gc.collect()
+    if DEVICE == "cuda":
+        torch.cuda.empty_cache()
+    del model
+
+    # Steg 2: Align (förbättra tidsstämplar)
+    print("Aligning...")
+    try: 
+        model_a, metadata = whisperx.load_align_model(
+            language_code=result["language"],
+            device=DEVICE,
+            model_name="WAV2VEC2_ASR_LARGE_LV60K_960H"
+        )
+        result = whisperx.align(
+            result["segments"], model_a, metadata, audio, DEVICE, return_char_alignments=False
+        )
+    except Exception as e:
+        warning_msg(f"Alignment failed, continuing without alignment: {str(e)}", session_id)
+
+    gc.collect()
+    if DEVICE == "cuda":
+        torch.cuda.empty_cache()
+    if 'model_a' in locals():
+        del model_a
+
+    # Steg 3: Diarize (bestäm vem som talar när)
+    print("Diarizing...", file=sys.stderr)
+    try:
+        diarize_model = DiarizationPipeline(
+            model_name="pyannote/speaker-diarization-community-1",
+            token=HF_TOKEN,
+            device=DEVICE,
+        )
+        diarize_segments = diarize_model(audio, min_speakers=2, max_speakers=2)
+        result = whisperx.assign_word_speakers(diarize_segments, result)
+        print("AI diarization completed", file=sys.stderr)
+    except Exception as e:
+        warning_msg(f"Diarization failed: {str(e)}", session_id)
+
+    # Steg 4: ge talarna läsbara namn (vuxen, barn, okänd) baserat på diarization och textinnehåll
+    speaker_map = {}
+    speaker_index = 0
+    speaker_names = ["vuxen", "barn", "okänd_1", "okänd_2"]
+
+    for seg in result["segments"]:
+        for word in seg.get("words", []):
+            speaker = word.get("speaker", "UNKNOWN")
+            if speaker not in speaker_map and speaker != "UNKNOWN":
+                if speaker_index < len(speaker_names):
+                    speaker_map[speaker] = speaker_names[speaker_index]
+                else:
+                    speaker_map[speaker] = f"okänd_{speaker_index}"
+                speaker_index += 1
+
+    # Steg 5: För varje segment, bestäm talarens roll (vuxen, barn, okänd) baserat på diarization och textinnehåll
+    transcript = []
+    for seg in result.get("segments", []):
+        if not seg.get("words"):
+            continue
+        
+        speaker_raw = seg["words"][0].get("speaker", "UNKNOWN")
+        diarized_role = speaker_map.get(speaker_raw, "okänd")
+        
+        sentence_text = " ".join([w["word"] for w in seg["words"]])
+        start_time = seg["words"][0]["start"]
+        end_time = seg["words"][-1]["end"]
+        
+        text = sentence_text.strip()
+        lower = text.lower()
+        word_count = len(text.split())
+        
+        is_uncertain = (diarized_role == "okänd")
+        
+        # Frågor är nästan alltid från den vuxna
+        if text.endswith("?"):
+            final_role = "vuxen"
+            sentence_type = "question"
+        
+        # Korta bekräftelser och uppbackningar - typiskt vuxna
+        vuxen_reaktioner = [
+            "jaha", "okej", "mm", "ja", "nej", "jo", "nä", "jaså", "jasså",
+            "okej då", "förstår", "just det", "precis", "absolut", "visst",
+            "självklart", "givetvis", "javisst", "nej då", "ja just det",
+            "just ja", "okej bra", "bra", "toppen", "perfekt", "good",
+            "mm, ja", "ja, ja", "nej, nej", "ja okej", "nej okej",
+            "aha", "jaha", "så ja", "så där ja", "då förstår jag"
+        ]
+        
+        if (word_count <= 8 and any(lower == w or lower.startswith(w + " ") for w in vuxen_reaktioner)):
+            final_role = "vuxen"
+            sentence_type = "answer"
+        
+        # Osäkra, korta eller emotionella uttryck - ofta barn
+        barn_svar = [
+            "mm", "eh", "öhm", "typ", "liksom", "ba", "asså", "alltså",
+            "kanske", "nja", "näe", "nej", "ja", "jo", "jag vet inte",
+            "vet inte", "kommer inte ihåg", "minns inte", "glömt",
+            "okej", "men", "va", "vadå", "varför då", "hur då"
+        ]
+        
+        if (word_count <= 8 and any(lower == w or lower.startswith(w + " ") for w in barn_svar)):
+            final_role = "barn"
+            sentence_type = "answer"
+        
+        # Extremt korta segment (1-2 ord) - lita på diarization men ge tydlig typ
+        elif word_count <= 2:
+            # Låt diarization avgöra, men ge en tydlig typ
+            final_role = diarized_role if diarized_role != "okänd" else "vuxen"
+            sentence_type = "answer"
+        
+        # Längre segment (5+ ord) - mer sannolikt att det är en vuxen, särskilt om diarization var osäker
+        elif word_count >= 5:
+            final_role = diarized_role if diarized_role != "okänd" else "vuxen"
+            sentence_type = "statement"
+        
+        # 3-4 ord - osäkert, lita på diarization men ge en typ
+        else:
+            final_role = diarized_role if diarized_role != "okänd" else "vuxen"
+            sentence_type = "answer"
+        
+        # Sista utvägen: om diarization inte gav något och texten är kort, gissa baserat på längd
+        if final_role == "okänd":
+            if word_count <= 3:
+                final_role = "barn"
             else:
-                speaker_map[speaker] = f"okänd_{speaker_index}"
-            speaker_index += 1
+                final_role = "vuxen"
+        
+        transcript.append({
+            "speaker": final_role,
+            "text": text,
+            "type": sentence_type,
+            "start": round(start_time, 3),
+            "end": round(end_time, 3),
+            "duration": round(end_time - start_time, 3)
+        })
 
-# 5. Build transcript (sentence level)
-transcript = []
-for seg in result["segments"]:
-    if not seg.get("words"):
-        continue
-    
-    speaker_raw = seg["words"][0].get("speaker", "UNKNOWN")
-    speaker_name = speaker_map.get(speaker_raw, speaker_raw)
-    
-    sentence_text = " ".join([w["word"] for w in seg["words"]])
-    start_time = seg["words"][0]["start"]
-    end_time = seg["words"][-1]["end"]
-    
-    transcript.append({
-        "speaker": speaker_name,
-        "text": sentence_text.strip(),
-        "start": round(start_time, 3),
-        "end": round(end_time, 3),
-        "duration": round(end_time - start_time, 3)
-    })
+    if len(transcript) == 0:
+        warning_msg("No transcribed segments found after processing", session_id)
 
-# 6. Build complete output
-# SESSION_ID sätts av den som startar sessionen (inte här).
-# Samma ID används av emotion och alignment. Fallback endast för testning.
-session_id = os.getenv("SESSION_ID", str(uuid.uuid4()))
+    # Steg 6: Formattera segmenten i det önskade JSON-formatet
+    segments = []
+    for i, seg in enumerate(transcript):
+        speaker_label = "UNKNOWN"
+        for label, role in speaker_map.items():
+            if role == seg["speaker"]:
+                speaker_label = label
+                break
+        segments.append({
+            "segmentId": f"seg_{i+1:03d}",
+            "speakerLabel": speaker_label,
+            "role": seg["speaker"],
+            "text": seg["text"],
+            "startMs": round(seg["start"] * 1000),
+            "endMs": round(seg["end"] * 1000),
+            "durationMs": round(seg["duration"] * 1000)
+        })
 
-segments = []
-for i, seg in enumerate(transcript):
-    segments.append({
-        "segmentId": f"seg_{i+1:03}",
-        "speakerLabel": next((k for k, v in speaker_map.items() if v == seg["speaker"]), "UNKNOWN"),
-        "role": seg["speaker"],
-        "text": seg["text"],
-        "startMs": round(seg["start"] * 1000),
-        "endMs": round(seg["end"] * 1000),
-        "durationMs": round(seg["duration"] * 1000)
-    })
+    # Steg 7: Bygg komplett utdata
+    output_data = {
+        "status": "success",
+        "sessionId": session_id,
+        "eventType": "transcript_final",
+        "language": LANGUAGE,
+        "durationMs": round(audio_duration * 1000),
+        "speakers": {label: {"role": role} for label, role in speaker_map.items()},
+        "segments": segments
+    }
 
-output_data = {
-    "sessionId": session_id,
-    "eventType": "transcript_final",
-    "language": LANGUAGE,
-    "durationMs": round(audio_duration * 1000),
-    "speakers": {
-        label: {"role": role}
-        for label, role in speaker_map.items()
-    },
-    "segments": segments
-}
+    # Steg 8: Spara utdata som JSON-fil
+    base = os.path.splitext(os.path.basename(AUDIO_FILE))[0]
+    json_path = os.path.join(OUTPUT_DIR, f"{base}.json")
 
-# 7. Save JSON output
-base = os.path.splitext(os.path.basename(AUDIO_FILE))[0]
-json_path = os.path.join(OUTPUT_DIR, f"{base}.json")
+    with open(json_path, "w", encoding="utf-8") as f:
+        json.dump(output_data, f, ensure_ascii=False, indent=2)
 
-with open(json_path, "w", encoding="utf-8") as f:
-    json.dump(output_data, f, ensure_ascii=False, indent=2)
+    # Steg 9: Skriv ut resultatet i JSON-format till stdout och logga viktig info till stderr
+    print(json.dumps(output_data, ensure_ascii=False))
+    print(f"\n  Saved: {json_path}", file=sys.stderr)
+    print(f"  Session ID: {session_id}", file=sys.stderr)
+    print(f"  Duration: {audio_duration:.2f} seconds", file=sys.stderr)
+    print(f"  Segments: {len(segments)}", file=sys.stderr)
+    print(f"  Speakers: {list(speaker_map.values()) if speaker_map else 'None'}", file=sys.stderr)
 
-print(f"\n  Saved: {json_path}")
-print(f"    Session: {output_data['sessionId']}")
-print(f"    Duration: {output_data['durationMs']}ms")
-print(f"    Segments: {len(segments)}")
-print(f"    Speakers: {list(speaker_map.values())}")
+except Exception as e:
+    error_exit("An unexpected error occurred", traceback.format_exc(), session_id)
