@@ -1,0 +1,49 @@
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Virtual environment
+venv/
+env/
+ENV/
+.venv
+whisper_env/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+dist/
+build/
+*.egg-info/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Output files
+output/
+*.json
+*.txt
+*.srt
+
+# Allow requirements files
+!requirements_common.txt
+!requirements_cpu.txt
+!requirements_gpu.txt
+
+# Audio files
+*.mp3
+*.wav
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Models (optional - comment out if you want to cache them)
+# whisperx_models/
