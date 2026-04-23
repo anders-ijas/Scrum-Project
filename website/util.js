@@ -1,21 +1,25 @@
 import { reactiveModel } from "./mobXReactiveModel.js";
-import { db } from "./firebase_util.js";
+import { db, initAnonymousAuth } from "./firebase_util.js"; // Added initAnonymousAuth
 import { doc, onSnapshot } from "firebase/firestore";
 
-// REMOVED: LOCAL_PREVIOUS_SNAPSHOT_KEY constant
-
 export function fetchData() {
-    // REMOVED: loadPreviousSnapshot() call, as we want to start fresh every session
+    // 1. Ensure the user is authenticated so the listener has permission
+    initAnonymousAuth();
 
+    // 2. IMPORTANT: Collection must match Python script ("emotion_data")
     const docRef = doc(db, "emotion", "current");
 
     onSnapshot(
         docRef,
         (docSnap) => {
-            if (!docSnap.exists()) return;
+            if (!docSnap.exists()) {
+                console.log("No data in 'emotion_data/current' yet.");
+                return;
+            }
 
             const data = docSnap.data();
             updateModelFromFirestore(data);
+            
         },
         (error) => {
             console.error("Firestore listener error:", error);
@@ -23,7 +27,6 @@ export function fetchData() {
     );
 }
 
-// Rewritten to only move current values to the model's snapshot property in memory
 function shiftCurrentToPrevious() {
     const snapshot = {
         question: reactiveModel.question,
@@ -33,16 +36,17 @@ function shiftCurrentToPrevious() {
         rawInput: reactiveModel.rawInput ?? "",
         timestamp: new Date().toISOString()
     };
-
-    // Only update the model's state; do not touch localStorage
     reactiveModel.setLatestSnapshot(snapshot);
 }
 
 function updateModelFromFirestore(data) {
-    const question = (data.question ?? "").trim();
-    const answer = (data.answer ?? "").trim();
-    const accuracy = (data.accuracy ?? "").trim();
-    const parsedEmotion = parseEmotion((data.emotion ?? "").trim());
+    // FIX: Use String() to prevent .trim() crashes on Numbers (like accuracy)
+    const question = String(data.question ?? "").trim();
+    const answer = String(data.answer ?? "").trim();
+    const accuracy = String(data.accuracy ?? "").trim();
+    
+    // FIX: Pass the raw emotion to the updated parser
+    const parsedEmotion = parseEmotion(String(data.emotion || data.emotion || "").trim());
 
     if (
         question === reactiveModel.question &&
@@ -53,8 +57,6 @@ function updateModelFromFirestore(data) {
         return;
     }
 
-    // If dataStream is true, it means we already have "current" data.
-    // Move that current data to the "previous" snapshot before updating with new Firestore values.
     if (reactiveModel.dataStream) {
         shiftCurrentToPrevious();
     }
@@ -66,38 +68,26 @@ function updateModelFromFirestore(data) {
     reactiveModel.setDataStream(true);
 }
 
-// ... rest of your parseText and parseEmotion functions remain the same
-export function parseText(text) {
-    const [question, answer, accuracy, emotion] = text.split(";");
-    const parsedEmotion = parseEmotion(emotion);
-    if (
-        question === reactiveModel.question &&
-        answer === reactiveModel.answer &&
-        accuracy === reactiveModel.accuracy &&
-        parsedEmotion === reactiveModel.emotion
-    ) {
-        return;
-    }
-    reactiveModel.setCurrentQuestion(question);
-    reactiveModel.setCurrentAnswer(answer);
-    reactiveModel.setCurrentAccuracy(accuracy);
-    reactiveModel.setCurrentEmotion(parsedEmotion);
-    reactiveModel.setDataStream(true);
-}
-
 export function parseEmotion(emotion) {
-    switch (emotion) {
-        case "Glad":
+    // FIX: Model sends English (e.g., "happiness"), website uses Swedish logic
+    switch (emotion.toLowerCase()) {
+        case "happiness":
+        case "glad":
             return "😊";
-        case "Ledsen":
+        case "sadness":
+        case "ledsen":
             return "😢";
-        case "Arg":
+        case "anger":
+        case "arg":
             return "😠";
-        case "Rädd":
+        case "fear":
+        case "rädd":
             return "😨";
-        case "Äcklad":
+        case "disgust":
+        case "äcklad":
             return "🤢";
-        case "Förvånad":
+        case "surprise":
+        case "förvånad":
             return "😲";
         default:
             return "😐";

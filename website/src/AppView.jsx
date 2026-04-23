@@ -9,10 +9,9 @@ const EMOTIONS = [
   { level: 5, emoji: "😊", label: "Glad", labelColor: "#4e38a8" },
 ];
 
-const EMOJI_TO_INDEX = { "😡": 0, "😠": 1, "😢": 2, "😨": 3, "🤢": 3, "😲": 4, "😐": 4, "😊": 5 };
+const EMOJI_TO_INDEX = { "😡": 0, "😠": 1, "😢": 2, "😟": 3, "😨": 3, "🤢": 3, "😲": 4, "😐": 4, "😊": 5 };
 const CELL_HEIGHT = 88;
 const START_Y = 67; 
-const TOTAL_COL_HEIGHT = 660;
 
 function EmotionalThermometer({ emotion, previousEmotion }) {
   const currentIndex = EMOJI_TO_INDEX[emotion] ?? 4;
@@ -22,12 +21,10 @@ function EmotionalThermometer({ emotion, previousEmotion }) {
   const previousY = START_Y + (previousIndex * CELL_HEIGHT) + (CELL_HEIGHT / 2);
   
   const pointsDown = currentY > previousY;
-  
   const topBoundary = Math.min(currentY, previousY);
-  const bottomBoundary = Math.max(currentY, previousY);
+  const distance = Math.abs(currentY - previousY);
 
   return (
-    /* Fixat: Lagt till mellanrum och korrekt template literal för wrapper-färgerna */
     <div className={`thermo-wrapper ${currentIndex < 4 ? "thermo-wrapper--negative" : "thermo-wrapper--positive"}`}>
       <div className="thermo-arrow-col">
         {/* Grå Jämförelsepil */}
@@ -36,7 +33,7 @@ function EmotionalThermometer({ emotion, previousEmotion }) {
             className={`thermo-compare-arrow ${pointsDown ? "thermo-compare-arrow--down" : "thermo-compare-arrow--up"}`}
             style={{
               top: `${topBoundary}px`,
-              bottom: `${TOTAL_COL_HEIGHT - bottomBoundary}px`
+              height: `${distance}px`
             }}
           >
             <div className="thermo-compare-shaft" />
@@ -45,7 +42,7 @@ function EmotionalThermometer({ emotion, previousEmotion }) {
           </div>
         )}
 
-        {/* Svart Huvudpil */}
+        {/* Svart Huvudpil - visar den specifika emojin */}
         <div className="thermo-arrow" style={{ top: `${currentY}px` }}>
           <div className="thermo-arrow-shaft" />
           <div className="thermo-arrow-head" />
@@ -83,12 +80,11 @@ function EmotionalThermometer({ emotion, previousEmotion }) {
 }
 
 export function AppView(props) {
-  /* Beräknar om den nuvarande känslan ska trigga röd (negativ) eller grön (positiv) ram */
+  /* Allt under nivå 4 är "bad" */
   const currentIndex = EMOJI_TO_INDEX[props.emotion] ?? 4;
   const isNegative = currentIndex < 4;
 
   return (
-    /* Applicerar klassen på yttersta div:en för att styra skärmkanten */
     <div className={`app-view ${isNegative ? "status--negative" : "status--positive"}`}>
       <div className="info-row">
         <h2>Senaste Fråga: {props.question}</h2>
