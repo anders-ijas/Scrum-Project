@@ -22,7 +22,7 @@ class FirebaseLogger:
         current_time = time.time()
         
         # Strictly enforce the 1-second rule to prevent network backup
-        if current_time - self.last_upload_time > 0.1:
+        if current_time - self.last_upload_time > 1.1:
             try:
                 # Ensure fields match EXACTLY what util.js extracts
                 doc_data = {
