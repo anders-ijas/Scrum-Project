@@ -87,6 +87,8 @@ pip install -r requirements_gpu.txt
 pip install -r requirements_common.txt
 ```
 
+The script automatically detects and uses GPU if available, otherwise falls back to CPU.
+
 ### 4. Get Hugging Face token
 
 1. Go to https://huggingface.co/settings/tokens
@@ -121,15 +123,15 @@ python transcribe.py lectures/lecture_01.wav
 Files are saved in `transcription/output/`:
 - `filename.json` - Full transcription data
 
-## Configuration
+### Configuration
 
-Edit the top of `transcribe.py` to adjust:
+The script automatically handles device detection and speaker role assignment. No manual configuration needed.
 
-```python
-LANGUAGE = "sv"           # Language code: "en", "sv", "fr", etc.
-DEVICE = "cuda"            # "cuda" for GPU, "cpu" for CPU
-COMPUTE_TYPE = "float32"     # "int8", "float16", "float32"
-```
+### Automatic features:
+- GPU/CPU detection: Automatically uses CUDA if available, otherwise CPU
+- Adult speaker identification: Based on the first question in the conversation
+- Speaker role assignment: All segments from the adult speaker → "vuxen", others → "barn"
+- Segment classification: Question (ends with ?), Answer (short, ≤4 words), Statement (longer)
 
 ### Performance notes:
 
@@ -148,10 +150,6 @@ COMPUTE_TYPE = "float32"     # "int8", "float16", "float32"
 - Make sure `.env` file exists in the `transcription/` directory
 - Verify the token is correctly set
 - Make sure `python-dotenv` is installed
-
-### Out of memory errors
-- Switch to `DEVICE = "cpu"`
-- Or reduce `COMPUTE_TYPE` to `"int8"`
 
 ### Diarization fails
 - Ensure you have proper HF_TOKEN set

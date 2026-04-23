@@ -185,88 +185,84 @@ try:
                     speaker_map[speaker] = f"okänd_{speaker_index}"
                 speaker_index += 1
 
-    # Steg 5: För varje segment, bestäm talarens roll (vuxen, barn, okänd) baserat på diarization och textinnehåll
+    # Steg 4.5: Korrigera - svar ska inte komma från samma talare som frågan
+    correction_count = 0
+    for i in range(1, len(result["segments"])):
+        prev = result["segments"][i-1]
+        curr = result["segments"][i]
+        
+        if not prev.get("words") or not curr.get("words"):
+            continue
+        
+        prev_text = " ".join([w["word"] for w in prev["words"]])
+        prev_spk = prev["words"][0].get("speaker", "UNKNOWN")
+        curr_spk = curr["words"][0].get("speaker", "UNKNOWN")
+        
+        if prev_text.strip().endswith("?") and prev_spk == curr_spk:
+            # Byt till den andra talaren
+            other = None
+            for s in result["segments"]:
+                if s.get("words"):
+                    sp = s["words"][0].get("speaker", "UNKNOWN")
+                    if sp != "UNKNOWN" and sp != prev_spk:
+                        other = sp
+                        break
+            if other:
+                for w in curr.get("words", []):
+                    w["speaker"] = other
+                correction_count += 1
+    
+    if correction_count:
+        print(f"Fixed {correction_count} answers from same speaker as question", file=sys.stderr)
+
+    # Steg 4.6: Vem är vuxen? (första frågan avgör)
+    adult = None
+    for seg in result["segments"]:
+        if seg.get("words"):
+            text = " ".join([w["word"] for w in seg["words"]])
+            if text.strip().endswith("?"):
+                adult = seg["words"][0].get("speaker", "UNKNOWN")
+                print(f"Adult: {adult}", file=sys.stderr)
+                break
+
+    # Steg 5: Bygg transcript
     transcript = []
+    vuxen_ord = {"jaha", "okej", "mm", "ja", "nej", "jo", "jaså", "förstår", "precis", "absolut", "bra", "okej då", "men om", "finns det"}
+    barn_ord = {"typ", "liksom", "ba", "asså", "kanske", "nja", "va", "vadå", "eh", "öhm", "jag vet inte", "vet inte"}
+    
     for seg in result.get("segments", []):
         if not seg.get("words"):
             continue
         
-        speaker_raw = seg["words"][0].get("speaker", "UNKNOWN")
-        diarized_role = speaker_map.get(speaker_raw, "okänd")
-        
-        sentence_text = " ".join([w["word"] for w in seg["words"]])
-        start_time = seg["words"][0]["start"]
-        end_time = seg["words"][-1]["end"]
-        
-        text = sentence_text.strip()
+        spk = seg["words"][0].get("speaker", "UNKNOWN")
+        text = " ".join([w["word"] for w in seg["words"]]).strip()
         lower = text.lower()
-        word_count = len(text.split())
+        words = len(text.split())
         
-        is_uncertain = (diarized_role == "okänd")
-        
-        # Frågor är nästan alltid från den vuxna
-        if text.endswith("?"):
-            final_role = "vuxen"
-            sentence_type = "question"
-        
-        # Korta bekräftelser och uppbackningar - typiskt vuxna
-        vuxen_reaktioner = [
-            "jaha", "okej", "mm", "ja", "nej", "jo", "nä", "jaså", "jasså",
-            "okej då", "förstår", "just det", "precis", "absolut", "visst",
-            "självklart", "givetvis", "javisst", "nej då", "ja just det",
-            "just ja", "okej bra", "bra", "toppen", "perfekt", "good",
-            "mm, ja", "ja, ja", "nej, nej", "ja okej", "nej okej",
-            "aha", "jaha", "så ja", "så där ja", "då förstår jag"
-        ]
-        
-        if (word_count <= 8 and any(lower == w or lower.startswith(w + " ") for w in vuxen_reaktioner)):
-            final_role = "vuxen"
-            sentence_type = "answer"
-        
-        # Osäkra, korta eller emotionella uttryck - ofta barn
-        barn_svar = [
-            "mm", "eh", "öhm", "typ", "liksom", "ba", "asså", "alltså",
-            "kanske", "nja", "näe", "nej", "ja", "jo", "jag vet inte",
-            "vet inte", "kommer inte ihåg", "minns inte", "glömt",
-            "okej", "men", "va", "vadå", "varför då", "hur då"
-        ]
-        
-        if (word_count <= 8 and any(lower == w or lower.startswith(w + " ") for w in barn_svar)):
-            final_role = "barn"
-            sentence_type = "answer"
-        
-        # Extremt korta segment (1-2 ord) - lita på diarization men ge tydlig typ
-        elif word_count <= 2:
-            # Låt diarization avgöra, men ge en tydlig typ
-            final_role = diarized_role if diarized_role != "okänd" else "vuxen"
-            sentence_type = "answer"
-        
-        # Längre segment (5+ ord) - mer sannolikt att det är en vuxen, särskilt om diarization var osäker
-        elif word_count >= 5:
-            final_role = diarized_role if diarized_role != "okänd" else "vuxen"
-            sentence_type = "statement"
-        
-        # 3-4 ord - osäkert, lita på diarization men ge en typ
+        if adult:
+            # Använd första frågan för att bestämma roll
+            role = "vuxen" if spk == adult else "barn"
+            seg_type = "question" if text.endswith("?") else ("answer" if words <= 4 else "statement")
         else:
-            final_role = diarized_role if diarized_role != "okänd" else "vuxen"
-            sentence_type = "answer"
-        
-        # Sista utvägen: om diarization inte gav något och texten är kort, gissa baserat på längd
-        if final_role == "okänd":
-            if word_count <= 3:
-                final_role = "barn"
+            # Fallback
+            if text.endswith("?"):
+                role, seg_type = "vuxen", "question"
+            elif any(w in lower for w in vuxen_ord):
+                role, seg_type = "vuxen", "answer"
+            elif any(w in lower for w in barn_ord) or words <= 4:
+                role, seg_type = "barn", "answer"
             else:
-                final_role = "vuxen"
+                role, seg_type = "vuxen", "statement"
         
         transcript.append({
-            "speaker": final_role,
+            "speaker": role,
             "text": text,
-            "type": sentence_type,
-            "start": round(start_time, 3),
-            "end": round(end_time, 3),
-            "duration": round(end_time - start_time, 3)
+            "type": seg_type,
+            "start": round(seg["words"][0]["start"], 3),
+            "end": round(seg["words"][-1]["end"], 3),
+            "duration": round(seg["words"][-1]["end"] - seg["words"][0]["start"], 3)
         })
-
+        
     if len(transcript) == 0:
         warning_msg("No transcribed segments found after processing", session_id)
 
