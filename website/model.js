@@ -6,7 +6,7 @@ export const model = {
     accuracy : "",
     emotion : "😐",
     rawInput: "",
-    dataStream:false,
+    dataStream:0,
     latestSnapshot: {
         question : "",
         answer: "",
