@@ -15,7 +15,15 @@ print("\nStarting mock upload test...")
 test_data = [
     ("Glad", 0.99),
     ("sadness", 0.45),
-    ("neutral", 0.88)
+    ("neutral", 0.88),
+    ("anger", 0.30),
+    ("surprise", 0.75),
+    ("Glad", 0.99),
+    ("sadness", 0.45),
+    ("neutral", 0.88),
+    ("anger", 0.30),
+    ("surprise", 0.75)
+    
 ]
 
 for emotion, score in test_data:
@@ -25,6 +33,6 @@ for emotion, score in test_data:
     logger.update_current_emotion(emotion, score)
     
     # Wait 1.1 seconds to stay within the 1-write-per-second limit
-    time.sleep(1.1)
+    time.sleep(1.5)
 
 print("\nAll test data sent! Check your Firestore console.")
