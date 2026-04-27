@@ -9,7 +9,6 @@ from datetime import datetime
 from dotenv import load_dotenv
 import whisperx
 from whisperx.diarize import DiarizationPipeline
-
 warnings.filterwarnings("ignore", category=UserWarning, module="pyannote.audio.core.io")
 
 load_dotenv()
