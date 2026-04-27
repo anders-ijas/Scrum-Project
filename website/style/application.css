@@ -111,3 +111,29 @@ body {
   border-radius: 50%;
   margin-right: 12px;
 }
+.Button {
+  display: flex;
+  justify-content: center;
+  align-items: center; /* Ensures text stays centered vertically */
+  margin: 20px auto 0 auto; /* Added auto margins to help center the button block */
+  
+  /* Make it green */
+  background-color: #00c853; 
+  color: white; /* Changed text to white for better contrast against green */
+  
+  /* Make it wider */
+  padding: 15px  180px; /* Vertical padding first, Horizontal (width) second */
+  min-width: 250px; /* Guarantees a minimum width */
+  
+  /* Aesthetic improvements to match your mockup */
+  border: none;
+  border-radius: 12px;
+  font-size: 1.2rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.Button:hover {
+  opacity: 0.9; /* Subtle feedback when hovering */
+}

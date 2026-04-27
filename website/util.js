@@ -65,7 +65,8 @@ function updateModelFromFirestore(data) {
     reactiveModel.setCurrentAnswer(answer);
     reactiveModel.setCurrentAccuracy(accuracy);
     reactiveModel.setCurrentEmotion(parsedEmotion);
-    reactiveModel.setDataStream(true);
+    if (reactiveModel.dataStream!=2) {
+    reactiveModel.setDataStream(1);}
 }
 
 export function parseEmotion(emotion) {

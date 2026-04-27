@@ -58,6 +58,7 @@ export function AppView(props) {
 
         <TipsSection />
       </div>
+      <div><button className= "Button" onClick={props.onEndAnalysis}> Avsluta Analys</button></div>
     </div>
   );
 }

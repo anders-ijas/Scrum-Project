@@ -10,7 +10,9 @@ from dotenv import load_dotenv
 import whisperx
 from whisperx.diarize import DiarizationPipeline
 from emotionIntegration import FirebaseLogger
+
 warnings.filterwarnings("ignore", category=UserWarning, module="pyannote.audio.core.io")
+
 fb_logger = FirebaseLogger("../integration/service-account.json") 
 load_dotenv()
 
@@ -170,7 +172,7 @@ try:
     except Exception as e:
         warning_msg(f"Diarization failed: {str(e)}", session_id)
 
-    # Steg 4: ge talarna läsbara namn (vuxen, barn, okänd) baserat på diarization och textinnehåll
+    # Steg 4: ge talarna läsbara namn (vuxen, barn, okänd) baserat på diarization
     speaker_map = {}
     speaker_index = 0
     speaker_names = ["vuxen", "barn", "okänd_1", "okänd_2"]
@@ -185,114 +187,86 @@ try:
                     speaker_map[speaker] = f"okänd_{speaker_index}"
                 speaker_index += 1
 
-    # Steg 4.5: Korrigera - svar ska inte komma från samma talare som frågan
-    correction_count = 0
-    for i in range(1, len(result["segments"])):
-        prev = result["segments"][i-1]
-        curr = result["segments"][i]
-        
-        if not prev.get("words") or not curr.get("words"):
-            continue
-        
-        prev_text = " ".join([w["word"] for w in prev["words"]])
-        prev_spk = prev["words"][0].get("speaker", "UNKNOWN")
-        curr_spk = curr["words"][0].get("speaker", "UNKNOWN")
-        
-        if prev_text.strip().endswith("?") and prev_spk == curr_spk:
-            # Byt till den andra talaren
-            other = None
-            for s in result["segments"]:
-                if s.get("words"):
-                    sp = s["words"][0].get("speaker", "UNKNOWN")
-                    if sp != "UNKNOWN" and sp != prev_spk:
-                        other = sp
-                        break
-            if other:
-                for w in curr.get("words", []):
-                    w["speaker"] = other
-                correction_count += 1
-    
-    if correction_count:
-        print(f"Fixed {correction_count} answers from same speaker as question", file=sys.stderr)
-
-    # Steg 4.6: Vem är vuxen? (första frågan avgör)
-    adult = None
-    for seg in result["segments"]:
-        if seg.get("words"):
-            text = " ".join([w["word"] for w in seg["words"]])
-            if text.strip().endswith("?"):
-                adult = seg["words"][0].get("speaker", "UNKNOWN")
-                print(f"Adult: {adult}", file=sys.stderr)
-                break
-
-    # Steg 5: Bygg transcript
-    transcript = []
-    vuxen_ord = {"jaha", "okej", "mm", "ja", "nej", "jo", "jaså", "förstår", "precis", "absolut", "bra", "okej då", "men om", "finns det"}
-    barn_ord = {"typ", "liksom", "ba", "asså", "kanske", "nja", "va", "vadå", "eh", "öhm", "jag vet inte", "vet inte"}
+    # Steg 5: Bygg segment (första steget för att få text och roller)
+    raw_segments = []
     
     for seg in result.get("segments", []):
         if not seg.get("words"):
             continue
         
         spk = seg["words"][0].get("speaker", "UNKNOWN")
+        role = speaker_map.get(spk, "okänd")
+        
         text = " ".join([w["word"] for w in seg["words"]]).strip()
-        lower = text.lower()
         words = len(text.split())
         
-        if adult:
-            # Använd första frågan för att bestämma roll
-            role = "vuxen" if spk == adult else "barn"
-            seg_type = "question" if text.endswith("?") else ("answer" if words <= 4 else "statement")
+        # Bestäm typ baserat på frågetecken och kontext
+        if text.endswith("?"):
+            seg_type = "question"
+        elif len(raw_segments) > 0 and raw_segments[-1]["type"] == "question":
+            seg_type = "answer"
         else:
-            # Fallback
-            if text.endswith("?"):
-                role, seg_type = "vuxen", "question"
-            elif any(w in lower for w in vuxen_ord):
-                role, seg_type = "vuxen", "answer"
-            elif any(w in lower for w in barn_ord) or words <= 4:
-                role, seg_type = "barn", "answer"
-            else:
-                role, seg_type = "vuxen", "statement"
+            seg_type = "statement"
         
-        transcript.append({
+        speaker_label = spk
+        
+        raw_segments.append({
             "speaker": role,
+            "speakerLabel": speaker_label,
             "text": text,
             "type": seg_type,
-            "start": round(seg["words"][0]["start"], 3),
-            "end": round(seg["words"][-1]["end"], 3),
-            "duration": round(seg["words"][-1]["end"] - seg["words"][0]["start"], 3)
-        })
-        
-    if len(transcript) == 0:
-        warning_msg("No transcribed segments found after processing", session_id)
-
-    # Steg 6: Formattera segmenten i det önskade JSON-formatet
-    segments = []
-    for i, seg in enumerate(transcript):
-        speaker_label = "UNKNOWN"
-        for label, role in speaker_map.items():
-            if role == seg["speaker"]:
-                speaker_label = label
-                break
-        segments.append({
-            "segmentId": f"seg_{i+1:03d}",
-            "speakerLabel": speaker_label,
-            "role": seg["speaker"],
-            "text": seg["text"],
-            "startMs": round(seg["start"] * 1000),
-            "endMs": round(seg["end"] * 1000),
-            "durationMs": round(seg["duration"] * 1000)
+            "startMs": round(seg["words"][0]["start"] * 1000),
+            "endMs": round(seg["words"][-1]["end"] * 1000),
         })
 
-    # Steg 7: Bygg komplett utdata
+    # Steg 6: Bygg exchanges (fråga/svar-block)
+    exchanges = []
+    exchange_id = 1
+    i = 0
+    
+    while i < len(raw_segments):
+        if raw_segments[i]["type"] == "question":
+            question = {
+                "text": raw_segments[i]["text"],
+                "speaker": raw_segments[i]["speaker"],
+                "speakerLabel": raw_segments[i]["speakerLabel"],
+                "startMs": raw_segments[i]["startMs"],
+                "endMs": raw_segments[i]["endMs"],
+            }
+            
+            # Leta efter svar (nästa segment som är answer)
+            answer = None
+            if i + 1 < len(raw_segments) and raw_segments[i+1]["type"] == "answer":
+                answer = {
+                    "text": raw_segments[i+1]["text"],
+                    "speaker": raw_segments[i+1]["speaker"],
+                    "speakerLabel": raw_segments[i+1]["speakerLabel"],
+                    "startMs": raw_segments[i+1]["startMs"],
+                    "endMs": raw_segments[i+1]["endMs"],
+                }
+                i += 2  # Hoppa över både fråga och svar
+            else:
+                i += 1  # Hoppa bara över frågan (inget svar)
+            
+            exchanges.append({
+                "exchangeId": exchange_id,
+                "question": question,
+                "answer": answer
+            })
+            exchange_id += 1
+        else:
+            i += 1
+
+    if len(exchanges) == 0:
+        warning_msg("No exchanges (question/answer pairs) found after processing", session_id)
+
+    # Steg 7: Bygg komplett utdata med exchanges
     output_data = {
         "status": "success",
         "sessionId": session_id,
         "eventType": "transcript_final",
         "language": LANGUAGE,
-        "durationMs": round(audio_duration * 1000),
-        "speakers": {label: {"role": role} for label, role in speaker_map.items()},
-        "segments": segments
+        "exchanges": exchanges
     }
 
     # Steg 8: Spara utdata som JSON-fil
@@ -307,8 +281,7 @@ try:
     print(json.dumps(output_data, ensure_ascii=False))
     print(f"\n  Saved: {json_path}", file=sys.stderr)
     print(f"  Session ID: {session_id}", file=sys.stderr)
-    print(f"  Duration: {audio_duration:.2f} seconds", file=sys.stderr)
-    print(f"  Segments: {len(segments)}", file=sys.stderr)
+    print(f"  Exchanges: {len(exchanges)}", file=sys.stderr)
     print(f"  Speakers: {list(speaker_map.values()) if speaker_map else 'None'}", file=sys.stderr)
 
 except Exception as e:

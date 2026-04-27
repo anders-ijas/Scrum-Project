@@ -1,6 +1,9 @@
 import { observer } from "mobx-react-lite" 
 import { AppView } from "./AppView.jsx";
 export const AppPresenter = observer(function AppPresenter(props) {
+    function setStream() {
+    props.model.setDataStream(2);
+}
     return <AppView
         question={props.model.question} 
         answer={props.model.answer}
@@ -11,6 +14,7 @@ export const AppPresenter = observer(function AppPresenter(props) {
         accuracyh={props.model.latestSnapshot.accuracy}
         emotionh={props.model.latestSnapshot.emotion}
         emotionCompare={emotionCompare}
+        onEndAnalysis={setStream}
     />
 })
 function emotionCompare(e1, e2) {
