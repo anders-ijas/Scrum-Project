@@ -1,119 +1,113 @@
 body {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  background: linear-gradient(135deg, #f5e6d3 0%, #e8d5c4 100%);
+  background-color: #f0f4f8;
   margin: 0;
-  padding: 0;
-  color: #5a4a42;
-}
-
-h1, h2 {
-  color: #6b4423;
-  font-weight: 500;
-  letter-spacing: 0.5px;
-}
-
-.app-view {
-  width: 100%;
-  padding-top: 16px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
   min-height: 100vh;
-  box-sizing: border-box;
-  transition: border 0.5s ease;
-  border: 12px solid transparent; /* Grundram */
 }
 
-/* Skärmkantens färger */
-.status--negative { border: 12px solid #E24B4A; }
-.status--positive { border: 12px solid #85C97A; }
+.app-container {
+  width: 100%;
+  max-width: 500px;
+  padding: 20px;
+}
 
-.info-row {
+.emotion-card {
+  background: white;
+  border-radius: 20px;
+  padding: 40px 30px;
+  text-align: center;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+}
+
+/* Big Emoji Area */
+.emoji-display {
+  background: #8b95a5;
+  border-radius: 15px;
+  display: inline-block;
+  padding: 30px 50px;
+  margin-bottom: 30px;
+}
+
+.emoji-icon {
+  font-size: 80px;
+  line-height: 1;
+}
+
+.emotion-label {
+  color: white;
+  margin: 10px 0 0 0;
+  font-size: 2.5rem;
+  font-weight: 600;
+}
+
+/* Security Progress Bar */
+.security-container {
+  margin-bottom: 40px;
+}
+
+.security-header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  gap: 2rem;
-  width: 100%;
-  padding: 0 24px;
-  box-sizing: border-box;
-  border-bottom: 2px solid #8b6f47;
-  padding-bottom: 16px;
-  margin-bottom: 16px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: #333;
 }
 
-.info-row h2 {
+.progress-bg {
+  background: #eee;
+  height: 14px;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  background: #00c853;
+  height: 100%;
+  border-radius: 10px;
+  transition: width 0.5s ease;
+}
+
+/* Tips Section */
+.tips-card {
+  background: #f0fbff;
+  border: 2px solid #a5e8ff;
+  border-radius: 15px;
+  text-align: left;
+  padding: 20px;
+}
+
+.tips-card h3 {
+  margin-top: 0;
+  font-size: 1.2rem;
+  color: #1a4a5e;
+}
+
+.tips-card ul {
+  list-style: none;
+  padding: 0;
   margin: 0;
-  font-size: 1.6rem;
-  white-space: nowrap;
 }
 
-/* BORTTAGET: position: fixed; för att förhindra clipping */
-.emotion {
-  display: flex;
-  justify-content: flex-end; /* Justerar termometern till höger */
-  padding-right: 2rem;
-  margin-top: 20px;
-}
-
-.thermo-wrapper {
-  display: flex;
-  align-items: flex-start;
-  gap: 0;
-  position: relative;
-}
-
-.thermo-arrow-col {
-  position: relative;
-  width: 160px;
-  height: 660px;
-}
-
-.thermo-arrow {
-  position: absolute;
-  right: 0;
+.tips-card li {
+  background: white;
+  margin-bottom: 10px;
+  padding: 12px 15px;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  color: #444;
   display: flex;
   align-items: center;
-  gap: 12px;
-  transition: top 0.4s ease;
-  transform: translateY(-50%);
-  pointer-events: none;
 }
 
-.thermo-arrow-shaft { width: 40px; height: 4px; background: #333; }
-.thermo-arrow-head {
-  width: 0; height: 0;
-  border-top: 9px solid transparent;
-  border-bottom: 9px solid transparent;
-  border-left: 14px solid #333;
-}
-
-.thermo-arrow-label { font-size: 24px; font-weight: 600; color: #333; }
-
-.thermo-compare-arrow {
-  position: absolute;
-  left: 30px; 
-  width: 16px;
-  transition: top 0.4s ease, bottom 0.4s ease;
-}
-
-.thermo-compare-shaft { position: absolute; left: 50%; transform: translateX(-50%); width: 3px; top: 0; bottom: 0; background: #888; }
-.thermo-compare-tail { position: absolute; left: 50%; transform: translateX(-50%); width: 14px; height: 4px; background: #888; }
-.thermo-compare-head { position: absolute; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 7px solid transparent; border-right: 7px solid transparent; }
-
-.thermo-compare-arrow--down .thermo-compare-tail { top: -2px; }
-.thermo-compare-arrow--down .thermo-compare-head { bottom: -4px; border-top: 12px solid #888; }
-.thermo-compare-arrow--up .thermo-compare-tail { bottom: -2px; }
-.thermo-compare-arrow--up .thermo-compare-head { top: -4px; border-bottom: 12px solid #888; }
-
-.thermo-tube { display: flex; flex-direction: column; align-items: center; }
-.thermo-bulb { width: 72px; height: 72px; border-radius: 50%; box-sizing: border-box; }
-.thermo-bulb--top { background: #e24b4a; border: 4px solid #c03535; margin-bottom: -8px; z-index: 2; }
-.thermo-bulb--bottom { background: #6b4fcf; border: 4px solid #4e38a8; margin-top: -8px; z-index: 2; }
-
-.thermo-segments { width: 56px; border: 3px solid #bbb; border-bottom: none; background: #eee; box-sizing: border-box; }
-.thermo-segment { height: 88px; display: flex; align-items: center; justify-content: center; font-weight: 500; font-size: 26px; color: white; }
-.thermo-label-col { display: flex; flex-direction: column; padding-top: 67px; }
-.thermo-cell { height: 88px; display: flex; align-items: center; padding-left: 16px; }
-.thermo-label-name { font-weight: 500; font-size: 20px; }
-
-@media (max-width: 768px) {
-  .emotion { justify-content: center; padding-right: 0; }
-  .thermo-arrow-col { width: 100px; }
+.tips-card li::before {
+  content: "";
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  background-color: #4285f4;
+  border-radius: 50%;
+  margin-right: 12px;
 }

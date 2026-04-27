@@ -9,8 +9,9 @@ from datetime import datetime
 from dotenv import load_dotenv
 import whisperx
 from whisperx.diarize import DiarizationPipeline
+from emotionIntegration import FirebaseLogger
 warnings.filterwarnings("ignore", category=UserWarning, module="pyannote.audio.core.io")
-
+fb_logger = FirebaseLogger("../integration/service-account.json") 
 load_dotenv()
 
 LANGUAGE   = "sv"
@@ -302,6 +303,7 @@ try:
         json.dump(output_data, f, ensure_ascii=False, indent=2)
 
     # Steg 9: Skriv ut resultatet i JSON-format till stdout och logga viktig info till stderr
+    fb_logger.sync_conversation_start(output_data)
     print(json.dumps(output_data, ensure_ascii=False))
     print(f"\n  Saved: {json_path}", file=sys.stderr)
     print(f"  Session ID: {session_id}", file=sys.stderr)
