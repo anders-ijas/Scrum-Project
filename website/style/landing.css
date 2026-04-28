@@ -92,21 +92,5 @@
   list-style: none;
   padding: 0;
   margin: 0;
-}
-
-.info-list li {
-  display: flex;
-  align-items: center;
-  font-size: 1rem;
-  color: #4a5568;
-  margin-bottom: 12px;
-}
-
-.info-bullet {
-  width: 8px;
-  height: 8px;
-  background-color: #4285f4;
-  border-radius: 50%;
-  margin-right: 15px;
-  flex-shrink: 0;
+  padding: 0 1rem;
 }
