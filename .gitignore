@@ -1,3 +1,5 @@
 node_modules/
 website/node_modules/
 integration/service-account.json
+service-account.json
+/website/venv

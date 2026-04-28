@@ -1,9 +1,12 @@
 @echo off
 echo [*] Startar upp systemet...
 
+call start-webpage.bat
+echo [+] Webpage started
+
 REM 1. Kolla om venv finns, annars skapa den
 if not exist venv\Scripts\activate (
-    echo [+] Hittade ingen venv. Skapar en ny virtuell miljo...
+    echo [+] Hittade ingen venv. Skapar en ny virtuell miljö...
     python -m venv venv
 )
 
