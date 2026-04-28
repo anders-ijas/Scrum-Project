@@ -49,7 +49,7 @@ export async function inita() {
 export async function historyMatch() {
     const q = query(
         collection(db, "emotion"),
-        where("sessionID", "==", "395f2231-05e1-41d2-81ce-a5d9880de551"),
+        where("sessionID", "==", sessionID),
         orderBy("archivedAt", "asc")
     );
     const snapshot = await getDocs(q);
