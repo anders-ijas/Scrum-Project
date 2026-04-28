@@ -9,6 +9,9 @@ import tensorflow as tf
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+from emotionIntegration import FirebaseLogger
+
+firebase_logger = FirebaseLogger("../integration/service-account.json")
 
 camera = cv2.VideoCapture(0)
 frame_width = int(camera.get(cv2.CAP_PROP_FRAME_WIDTH))
@@ -176,6 +179,8 @@ def to_row(color, all_strengths):
     scores = list(all_strengths.values())
     max_score = max(scores)
     emotion_max = mapper[scores.index(max_score)]
+
+    firebase_logger.update_current_emotion(emotion_max, max_score)
 
 
     row = [max_score,emotion_max,color,*scores,timestamp]
