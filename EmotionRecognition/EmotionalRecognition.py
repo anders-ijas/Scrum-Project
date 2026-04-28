@@ -16,16 +16,18 @@ frame_height = int(camera.get(cv2.CAP_PROP_FRAME_HEIGHT))
 four_cc = cv2.VideoWriter_fourcc(*'mp4v')
 out = cv2.VideoWriter('output.mp4', four_cc, 20.0, (frame_width, frame_height))
 
+# Convolutional Neural Network with layering and weights from VGG19 trained on the FER13 Dataset.
 FER13_model = tf.keras.models.load_model(
     "/Users/alexanderknave/Desktop/KTH/Projekt/model_FER13_VGG19.keras",
     compile=False
 )
-
+# Convolutional Neural Network with layering and weights from VGG19 trained on the RAF Dataset.
 RAF_model = tf.keras.models.load_model(
     "/Users/alexanderknave/Desktop/KTH/Projekt/RAF_model_2.keras",
     compile=False
 )
 
+# Classifier to detect and crop out faces
 haarcascade = cv2.CascadeClassifier(
     "/Users/alexanderknave/Desktop/KTH/Projekt/haarcascade_frontalface_default.xml"
 )
@@ -36,11 +38,11 @@ frame_data = []
 # ----------------------------
 # STABILISERING + SMOOTHING
 # ----------------------------
-display_emotion = "neutral"
+display_emotion = "neutral"        # Start emotion
 candidate_emotion = "neutral"
 candidate_count = 0
-required_frames = 4       # hur många frames innan label får byta
-alpha = 0.25              # smoothing, lägre = lugnare
+required_frames = 4       # Required frames with the same predicted shown emotion begore
+alpha = 0.25              # Smoothing variable (lower = smoother transition between emotions)
 
 prev_strengths = {
     "anger": 0.0,
@@ -53,13 +55,13 @@ prev_strengths = {
 }
 
 color_c = {
-    "anger":     (0, 0, 255),       # röd
-    "disgust":   (0, 160, 0),       # grön
-    "fear":      (180, 0, 180),     # lila
-    "happiness": (0, 255, 255),     # gul
-    "sadness":   (255, 0, 0),       # blå
-    "surprise":  (0, 165, 255),     # orange
-    "neutral":   (180, 180, 180)    # grå
+    "anger":     (0, 0, 255),       # Red
+    "disgust":   (0, 160, 0),       # Green
+    "fear":      (180, 0, 180),     # Purple
+    "happiness": (0, 255, 255),     # Yellow
+    "sadness":   (255, 0, 0),       # Blue
+    "surprise":  (0, 165, 255),     # Orange
+    "neutral":   (180, 180, 180)    # Grey
 }
 
 def preprocess_image_FER13(frame):
@@ -121,7 +123,7 @@ def update_emotion_and_color(prediction):
     prev_strengths = strengths.copy()
 
     color_list = []
-    boost = 1.25   # lyft färgen för emotion som faktiskt visas
+    boost = 1.25   # boosts current emotion
 
     for i in range(3):  # B, G, R
         value = 0.0
@@ -142,7 +144,7 @@ def update_emotion_and_color(prediction):
 
 def plotColor(name,df):
 
-    fig, ax = plt.subplots(figsize=(28, 10))
+    fig, ax = plt.subplots(figsize=(18, 6))
 
     for i, row in df.iterrows():
         # Convert BGR to RGB and normalize to 0-1 for matplotlib
@@ -155,7 +157,7 @@ def plotColor(name,df):
     ax.set_xticklabels(df['timestamp'], rotation=60, ha='right', fontsize=6)
     ax.set_ylabel('Max Score')
     ax.set_xlabel('Timestamp')
-    ax.set_title(f'Facial emotional respone to the words of {name} ')
+    ax.set_title(f'Facial emotion recognition of {name} ')
     plt.tight_layout()
     plt.show()
 
