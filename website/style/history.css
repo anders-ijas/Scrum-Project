@@ -1,0 +1,127 @@
+.history-view {
+  padding: 1rem 0;
+  font-family: var(--font-sans);
+}
+
+.history-view h2 {
+  font-size: 18px;
+  font-weight: 500;
+  margin: 0 0 4px;
+}
+
+.history-view > p {
+  font-size: 14px;
+  color: #666;
+  margin: 0 0 1.5rem;
+}
+
+.history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.history-entry {
+  background: #ffffff;
+  border: 1px solid #e0e0e0;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+/* Step rows */
+.entry-step {
+  padding: 14px 16px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.entry-step.adult {
+  background: #e0f7f0;
+}
+
+.entry-step.child {
+  background: #eef0fb;
+}
+
+/* Avatars */
+.avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 18px;
+}
+
+.avatar.adult {
+  background: #2ba98e;
+  color: white;
+}
+
+.avatar.child {
+  background: #5a7de8;
+}
+
+/* Step labels (the pill badges) */
+.step-label {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 6px;
+}
+
+.step-label.adult {
+  background: #1d9e75;
+  color: #04342c;
+}
+
+.step-label.child {
+  background: #534ab7;
+  color: #eeedfe;
+}
+
+.step-content {
+  flex: 1;
+}
+
+.step-text {
+  font-size: 15px;
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* Divider between steps */
+.divider {
+  height: 1px;
+  background: #d0d0d0;
+}
+
+/* Emotion footer */
+.emotion-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-top: 1px solid #e0e0e0;
+  background: #f7f7f7;
+}
+
+.emotion-label {
+  font-size: 12px;
+  color: #888;
+}
+
+.emotion-badge {
+  font-size: 12px;
+  font-weight: 500;
+  padding: 3px 10px;
+  border-radius: 20px;
+  background: #fff3cd;
+  color: #856404;
+}
