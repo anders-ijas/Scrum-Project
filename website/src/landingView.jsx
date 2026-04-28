@@ -1,131 +1,48 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+import "../style/landing.css";
 
-.landing-page {
-  display: flex;
-  flex-direction: column;
-  min-height: 100vh;
-  background-color: #f0f4f8; /* Mjuk bakgrund från bilden */
-  font-family: 'Inter', sans-serif;
-}
+export function LandingView(props) {
+  return (
+    <div className="landing-container">
+      <div className="landing-card">
+        {/* Connection Icon */}
+        <div className="connection-icon-wrapper">
+          <div className="wifi-icon">
+            <span role="img" aria-label="wifi">📶</span>
+          </div>
+        </div>
 
-/* Menu Bar */
-.menu-bar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1.2rem 3rem;
-  background: white;
-  border-bottom: 1px solid #e1e8ed;
-}
+        {/* Status Text */}
+        <h1 className="status-title">Ansluter till systemet...</h1>
+        <p className="status-subtitle">
+          Väntar på kontakt med Raspberry Pi och analysdator
+        </p>
 
-.menu-logo {
-  font-weight: 700;
-  color: #2c3e50;
-  font-size: 1.2rem;
-}
+        {/* Animated Loading Dots */}
+        <div className="loading-dots">
+          <span></span>
+          <span></span>
+          <span></span>
+        </div>
 
-.menu-links {
-  display: flex;
-  list-style: none;
-  gap: 2rem;
-  margin: 0;
-}
-
-.menu-links li {
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: #8e9aaf;
-  cursor: pointer;
-}
-
-/* Card Styling */
-.landing-container {
-  display: flex;
-  flex: 1;
-  justify-content: center;
-  align-items: center;
-}
-
-.glass-card {
-  background: white;
-  padding: 3.5rem 3rem;
-  border-radius: 24px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.03);
-  text-align: center;
-  max-width: 420px;
-  width: 100%;
-}
-
-/* Ikon med sök-animation */
-.icon-circle {
-  background-color: #8e9aaf;
-  width: 100px;
-  height: 100px;
-  border-radius: 24px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  margin: 0 auto 2rem;
-  position: relative;
-  /* Pulsar för att visa att den letar efter Pi */
-  animation: searchPulse 2s infinite ease-in-out;
-}
-
-.main-icon {
-  font-size: 40px;
-}
-
-.title {
-  font-size: 1.8rem;
-  font-weight: 700;
-  color: #2c3e50;
-  margin-bottom: 1rem;
-}
-
-.subtitle {
-  font-size: 1rem;
-  color: #5d707f;
-  line-height: 1.5;
-  margin-bottom: 2.5rem;
-}
-
-/* Status Info med Spinner */
-.status-info {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  color: #8e9aaf;
-  font-weight: 600;
-  font-size: 0.9rem;
-}
-
-.status-spinner {
-  width: 18px;
-  height: 18px;
-  border: 2px solid rgba(0, 214, 85, 0.1);
-  border-top: 2px solid #00d655; /* Grön färg från bilden */
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
-
-/* Animationer */
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-@keyframes searchPulse {
-  0% { 
-    transform: scale(1);
-    box-shadow: 0 0 0 0px rgba(142, 154, 175, 0.4); 
-  }
-  70% { 
-    transform: scale(1.03);
-    box-shadow: 0 0 0 20px rgba(142, 154, 175, 0); 
-  }
-  100% { 
-    transform: scale(1);
-    box-shadow: 0 0 0 0px rgba(142, 154, 175, 0); 
-  }
+        {/* Information Box */}
+        <div className="info-box">
+          <h3 className="info-title">Vad händer nu?</h3>
+          <ul className="info-list">
+            <li>
+              <span className="info-bullet"></span>
+              Systemet kontaktar Raspberry Pi
+            </li>
+            <li>
+              <span className="info-bullet"></span>
+              Kontrollerar att kamera och mikrofon fungerar
+            </li>
+            <li>
+              <span className="info-bullet"></span>
+              Laddar AI-modeller för känslor och tal
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  );
 }
