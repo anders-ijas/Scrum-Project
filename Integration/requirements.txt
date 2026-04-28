@@ -1,0 +1,11 @@
+whisperx==3.8.5 
+python-dotenv==1.0.0 
+torch==2.8.0 
+torchaudio==2.8.0
+opencv-python
+Pillow
+tensorflow
+pandas
+numpy
+matplotlib
+firebase_admin
