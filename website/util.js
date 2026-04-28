@@ -1,25 +1,56 @@
 import { reactiveModel } from "./mobXReactiveModel.js";
-import { db, initAnonymousAuth } from "./firebase_util.js"; // Added initAnonymousAuth
+import { db, initAnonymousAuth } from "./firebase_util.js";
 import { doc, onSnapshot } from "firebase/firestore";
+import { archiveCurrentToPrevious } from "./persistance.js";
+
+// Track what's currently in Firebase's "current" document
+let firebaseCurrentData = {
+    question: "",
+    answer: "",
+    accuracy: "",
+    emotion: "",
+    rawInput: "",
+    dataStream: 0
+};
 
 export function fetchData() {
-    // 1. Ensure the user is authenticated so the listener has permission
     initAnonymousAuth();
-
-    // 2. IMPORTANT: Collection must match Python script ("emotion_data")
     const docRef = doc(db, "emotion", "current");
 
     onSnapshot(
         docRef,
-        (docSnap) => {
+        async (docSnap) => {
             if (!docSnap.exists()) {
-                console.log("No data in 'emotion_data/current' yet.");
+                console.log("No data in 'emotion/current' yet.");
                 return;
             }
 
             const data = docSnap.data();
-            updateModelFromFirestore(data);
             
+            // ARCHIVE: Check if question or answer changed BEFORE updating
+            if (firebaseCurrentData.question && firebaseCurrentData.answer) {
+                if (data.question !== firebaseCurrentData.question || 
+                    data.answer !== firebaseCurrentData.answer) {
+                    try {
+                        await archiveCurrentToPrevious(firebaseCurrentData);
+                        console.log("Archived previous data");
+                    } catch (error) {
+                        console.error("Error archiving data:", error);
+                    }
+                }
+            }
+            
+            // Update the tracked Firebase data
+            firebaseCurrentData = {
+                question: String(data.question ?? "").trim(),
+                answer: String(data.answer ?? "").trim(),
+                accuracy: String(data.accuracy ?? "").trim(),
+                emotion: String(data.emotion ?? "").trim(),
+                rawInput: data.rawInput ?? "",
+                dataStream: data.dataStream ?? 0
+            };
+            
+            updateModelFromFirestore(data);
         },
         (error) => {
             console.error("Firestore listener error:", error);
@@ -40,12 +71,9 @@ function shiftCurrentToPrevious() {
 }
 
 function updateModelFromFirestore(data) {
-    // FIX: Use String() to prevent .trim() crashes on Numbers (like accuracy)
     const question = String(data.question ?? "").trim();
     const answer = String(data.answer ?? "").trim();
     const accuracy = String(data.accuracy ?? "").trim();
-    
-    // FIX: Pass the raw emotion to the updated parser
     const parsedEmotion = parseEmotion(String(data.emotion || data.emotion || "").trim());
 
     if (
@@ -65,12 +93,15 @@ function updateModelFromFirestore(data) {
     reactiveModel.setCurrentAnswer(answer);
     reactiveModel.setCurrentAccuracy(accuracy);
     reactiveModel.setCurrentEmotion(parsedEmotion);
-    if (reactiveModel.dataStream!=2) {
-    reactiveModel.setDataStream(1);}
+    if (reactiveModel.dataStream != 2) {
+        reactiveModel.setDataStream(1);
+    }
+}
+export function historyMatch(){
+
 }
 
 export function parseEmotion(emotion) {
-    // FIX: Model sends English (e.g., "happiness"), website uses Swedish logic
     switch (emotion.toLowerCase()) {
         case "happiness":
         case "glad":
@@ -93,4 +124,8 @@ export function parseEmotion(emotion) {
         default:
             return "😐";
     }
+}
+export function sessionKeyMaker(){
+    const sessionID = crypto.randomUUID();
+    return sessionID;
 }

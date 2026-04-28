@@ -4,7 +4,9 @@ const EMOTIONS = {
   "😐": { label: "Neutral", color: "#666" },
   "😊": { label: "Glad", color: "#4e38a8" },
   "😡": { label: "Rasande", color: "#E24B4A" },
-  // Add others as needed
+  "😢": { label: "Ledsen", color: "#4A90E2" },
+  "😨": { label: "Rädd", color: "#F5A623" },
+  "🤢": { label: "Äcklad", color: "#7B8D93" }
 };
 
 function SecurityBar({ percentage }) {
