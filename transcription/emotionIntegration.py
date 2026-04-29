@@ -16,26 +16,37 @@ class FirebaseLogger:
         
         self.db = firestore.client()
         self.last_upload_time = 0
+    
     def sync_conversation_start(self, output_data):
         """
-        Takes the first two segments and maps them to question/answer fields.
+        Sends all exchanges (question/answer pairs) to Firebase, with a small sleep between each pair.
         """
         try:
-            segments = output_data.get("segments", [])
+            exchanges = output_data.get("exchanges", [])
             
-            line1 = segments[0]["text"] if len(segments) > 0 else ""
-            line2 = segments[1]["text"] if len(segments) > 1 else ""
+            # Process each exchange (already paired as question/answer)
+            for i, exchange in enumerate(exchanges):
+                question_obj = exchange.get("question", {})
+                answer_obj = exchange.get("answer", {})
+                
+                line1 = question_obj.get("text", "") if question_obj else ""
+                line2 = answer_obj.get("text", "") if answer_obj else ""
 
-            update_data = {
-                "question": str(line1),
-                "answer": str(line2),
-                "last_updated": datetime.datetime.now(datetime.timezone.utc)
-            }
-            
-            self.db.collection("emotion").document("current").update(update_data)
-            
+                update_data = {
+                    "question": str(line1),
+                    "answer": str(line2),
+                    "last_updated": datetime.datetime.now(datetime.timezone.utc)
+                }
+                
+                self.db.collection("emotion").document("current").update(update_data)
+                print(f"✅ Synced exchange {i + 1}: Question='{line1}', Answer='{line2}'")
+                
+                # Small sleep between updates
+                time.sleep(0.5)
+                
         except Exception as e:
             print(f"❌ Firebase Transcription Sync Failed: {e}")
+    
     def update_current_emotion(self, label, score):
         current_time = time.time()
         
