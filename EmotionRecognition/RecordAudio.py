@@ -1,6 +1,7 @@
 import sounddevice as sd
 import numpy as np
 import wave
+import shutil
 
 from EmotionalRecognition import *
 
@@ -27,3 +28,20 @@ def recordAudio(name="unnamed",timestamp="",stop_event=None):
         wf.setsampwidth(2)
         wf.setframerate(fs)
         wf.writeframes(sample_format)
+        
+def copy_audio_to_transcription_input(original_filepath):
+    import os
+    import shutil   
+    from datetime import datetime
+    
+    input_dir = "transcription/input"
+    os.makedirs(input_dir, exist_ok=True)
+    
+    # Generera unikt filnamn baserat på tid
+    timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+    filename = f"{timestamp}.wav"
+    destination_path = os.path.join(input_dir, filename)
+    
+    shutil.copy(original_filepath, destination_path)
+    print(f"Audio file copied to: {destination_path}")
+    return filename
