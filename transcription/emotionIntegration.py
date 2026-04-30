@@ -31,15 +31,16 @@ class FirebaseLogger:
                 
                 line1 = question_obj.get("text", "") if question_obj else ""
                 line2 = answer_obj.get("text", "") if answer_obj else ""
+                answer_timestamp = answer_obj.get("startMs") if answer_obj else None
 
                 update_data = {
                     "question": str(line1),
                     "answer": str(line2),
-                    "last_updated": datetime.datetime.now(datetime.timezone.utc)
+                    "answerTimestampMs": answer_timestamp
                 }
                 
                 self.db.collection("emotion").document("current").update(update_data)
-                print(f"✅ Synced exchange {i + 1}: Question='{line1}', Answer='{line2}'")
+                print(f"✅ Synced exchange {i + 1}: Question='{line1}', Answer='{line2}', AnswerTimestampMs={answer_timestamp}")
                 
                 # Small sleep between updates
                 time.sleep(0.5)
