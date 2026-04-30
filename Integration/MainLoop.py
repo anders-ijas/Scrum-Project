@@ -69,7 +69,7 @@ def main():
                     
                     # --- ÄNDRING: Startar med stdin=PIPE för att kunna skicka "Enter" ---
                     audio_process = subprocess.Popen(
-                        [python_path, "../EmotionRecognition/RecordAudio.py", audio_file],
+                        [python_path, "../test_transcription_only.py", audio_file], #../EmotionRecognition/RecordAudio.py
                         stdin=subprocess.PIPE,
                         text=True
                     )
