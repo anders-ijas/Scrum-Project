@@ -34,7 +34,7 @@ def copy_audio_to_transcription_input(original_filepath):
     import shutil   
     from datetime import datetime
     
-    input_dir = "transcription/input"
+    input_dir = "../transcription/input"
     os.makedirs(input_dir, exist_ok=True)
     
     # Generera unikt filnamn baserat på tid
