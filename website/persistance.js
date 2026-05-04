@@ -1,5 +1,5 @@
 import { db } from "./firebase_util.js";
-import { collection, addDoc, setDoc, doc, query, where, getDocs } from "firebase/firestore";
+import { collection, addDoc, setDoc, doc, query, where, getDocs, writeBatch } from "firebase/firestore";
 import { model } from "./model.js";
 import { sessionID } from "./src/index.jsx";
 
@@ -16,8 +16,9 @@ export async function archiveCurrentToPrevious(currentData) {
         emotion: currentData.emotion || "😐",
         rawInput: currentData.rawInput || "",
         dataStream: currentData.dataStream || 0,
-        emotionTimestamp: currentData.emotionTimestamp || 0, // --- ADDED ---
-        answerTimestampMs: currentData.answerTimestampMs || 0, // --- ADDED ---
+        // Using the unified stopwatch timestamps
+        emotionTimestamp: currentData.emotionTimestamp || 0, 
+        answerTimestampMs: currentData.answerTimestampMs || 0, 
         archived: true,
         sessionID: sessionID
     });
@@ -50,11 +51,41 @@ export async function inita() {
 }
 
 export async function historyMatch() {
-    // --- CHANGED: Removed the orderBy("archivedAt") which hid documents ---
+    // Removed the orderBy constraint so Firestore returns all documents 
+    // for this session, regardless of their exact timestamp field name.
     const q = query(
         collection(db, "emotion"),
         where("sessionID", "==", sessionID)
     );
     const snapshot = await getDocs(q);
     return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+}
+
+export async function clearAllHistory() {
+    try {
+        const q = collection(db, "emotion");
+        const snapshot = await getDocs(q);
+        
+        const batch = writeBatch(db);
+        let deleteCount = 0;
+        
+        snapshot.docs.forEach((document) => {
+            // ONLY delete if the document ID is not "current"
+            if (document.id !== "current") {
+                batch.delete(doc(db, "emotion", document.id));
+                deleteCount++;
+            }
+        });
+        
+        // Only commit if there are actually things to delete
+        if (deleteCount > 0) {
+            await batch.commit();
+            console.log(`🗑️ Wiped ${deleteCount} history records. 'current' was kept safe.`);
+        } else {
+            console.log("No history records found to delete.");
+        }
+        
+    } catch (error) {
+        console.error("Error wiping database:", error);
+    }
 }
