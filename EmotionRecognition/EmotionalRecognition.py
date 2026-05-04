@@ -1,3 +1,4 @@
+from pathlib import Path
 from tkinter import *
 import cv2
 from PIL import Image, ImageTk
@@ -9,24 +10,35 @@ import tensorflow as tf
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+from RecordAudio import *
+import threading
 from emotionIntegration import FirebaseLogger
+BASE_DIR = Path(__file__).resolve().parent
+PROJECT_ROOT = BASE_DIR.parent
 
-firebase_logger = FirebaseLogger("../integration/service-account.json")
+firebase_logger = FirebaseLogger(
+    str(PROJECT_ROOT / "integration" / "service-account.json")
+)
+
+flag = True
 
 camera = cv2.VideoCapture(0)
 frame_width = int(camera.get(cv2.CAP_PROP_FRAME_WIDTH))
 frame_height = int(camera.get(cv2.CAP_PROP_FRAME_HEIGHT))
-four_cc = cv2.VideoWriter_fourcc(*'mp4v')
-out = cv2.VideoWriter('output.mp4', four_cc, 20.0, (frame_width, frame_height))
+four_cc = cv2.VideoWriter_fourcc(*"mp4v")
 
-# Convolutional Neural Network with layering and weights from VGG19 trained on the FER13 Dataset.
+
+# Convolutional Neural Network with layering and weights from VGG19 with further image classification training on the FER13 Dataset.
 FER13_model = tf.keras.models.load_model(
     "model_FER13_VGG19.keras",
+
     compile=False
 )
-# Convolutional Neural Network with layering and weights from VGG19 trained on the RAF Dataset.
+
+# Convolutional Neural Network with layering and weights from VGG19 with further image classification training on the RAF Dataset.
 RAF_model = tf.keras.models.load_model(
     "model_2.keras",
+
     compile=False
 )
 
@@ -38,14 +50,12 @@ haarcascade = cv2.CascadeClassifier(
 mapper = ['anger', 'disgust', 'fear', 'happiness', 'sadness', 'surprise', 'neutral']
 frame_data = []
 
-# ----------------------------
-# STABILISERING + SMOOTHING
-# ----------------------------
 display_emotion = "neutral"        # Start emotion
 candidate_emotion = "neutral"
 candidate_count = 0
 required_frames = 4       # Required frames with the same predicted shown emotion begore
 alpha = 0.25              # Smoothing variable (lower = smoother transition between emotions)
+stop_event = threading.Event()
 
 prev_strengths = {
     "anger": 0.0,
@@ -147,9 +157,10 @@ def update_emotion_and_color(prediction):
 
 def plotColor(name,df):
 
-    fig, ax = plt.subplots(figsize=(18, 6))
+    ax = plt.subplots(figsize=(18, 6))
 
     for i, row in df.iterrows():
+
         # Convert BGR to RGB and normalize to 0-1 for matplotlib
         bgr = row['color']
         rgb = (bgr[2]/255, bgr[1]/255, bgr[0]/255)
@@ -187,10 +198,13 @@ def to_row(color, all_strengths):
     frame_data.append(row)
 
 
-def CameraStream(name):
+def CameraStream(name,timestamp):
     global session_start_time
+    global flag
     firebase_logger.get_active_session_id()
     session_start_time = time.time()
+
+    out = cv2.VideoWriter(f'RecordingVideo{str(name).capitalize()}-{timestamp}.mp4', four_cc, 20.0, (frame_width, frame_height))
     while True:
         ret, frame = camera.read()
 
@@ -211,6 +225,7 @@ def CameraStream(name):
         cv2.imshow('Camera', frame)
 
         if cv2.waitKey(1) & 0xFF == ord('q'):
+            stop_event.set()
             break
 
     camera.release()
@@ -219,13 +234,26 @@ def CameraStream(name):
 
     columns = ["max_score","emotion","color","anger","disgust","fear","happiness","sadness","surprise","neutral","timestamp"]
     df = pd.DataFrame(frame_data, columns=columns)
+    df.name = f'{str(name).capitalize()} | {timestamp}'
     print(df)
     plotColor(name, df)
 
 def main():
+
+    # File name
     print("Enter your name:")
     name = input()
-    CameraStream(name)
+    timestamp = time.strftime("%Y-%m-%d_%H-%M",(time.gmtime(time.time())))
+
+#   Run audio recording in a seperate thread
+    t = threading.Thread(target=recordAudio,args=(name,timestamp,stop_event))
+    t.start()
+
+    CameraStream(name,timestamp)
+    print("Press enter to finish recording.")
+
+#    Wait for video recording to finish
+    t.join()
 
 if __name__ == "__main__":
     main()

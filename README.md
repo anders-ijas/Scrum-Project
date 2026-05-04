@@ -20,3 +20,6 @@ in console
  npm run dev
 ```
  which will run the website on localhost:5173
+
+# To run the project automatically
+Open CMD in integration folder and run start.bat

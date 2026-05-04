@@ -9,3 +9,5 @@ pandas
 numpy
 matplotlib
 firebase_admin
+keyboard
+sounddevice

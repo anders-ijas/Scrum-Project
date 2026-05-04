@@ -32,6 +32,10 @@ output/
 *.txt
 *.srt
 
+# Input files
+input/
+*.wav
+
 # Allow requirements files
 !requirements_common.txt
 !requirements_cpu.txt

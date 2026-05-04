@@ -2,10 +2,40 @@ import socket
 import subprocess
 import sys
 import os
+import threading
+import keyboard
 
 # Konfiguration
-HOST = '10.0.0.1'  # Datorns IP-adress
-PORT = 65432       # Port att lyssna på
+DESIRED_HOST = '10.0.0.1'
+PORT = 65432
+
+def get_valid_host(target_ip):
+    try:
+        test_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        test_sock.bind((target_ip, 0)) 
+        test_sock.close()
+        return target_ip
+    except OSError:
+        print(f"[*] {target_ip} hittades inte på denna dator. Fallback till 127.0.0.1 (localhost).")
+        return '127.0.0.1'
+
+HOST = get_valid_host(DESIRED_HOST)
+
+def send_local_toggle():
+    try:
+        client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        client_socket.connect((HOST, PORT))
+        client_socket.sendall(b'TOGGLE')
+        client_socket.close()
+    except Exception as e:
+        print(f"\n[!] Manuellt avbrott misslyckades: {e}")
+
+def listen_for_spacebar():
+    keyboard.add_hotkey('space', send_local_toggle)
+    keyboard.wait()
+
+listener_thread = threading.Thread(target=listen_for_spacebar, daemon=True)
+listener_thread.start()
 
 def main():
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -13,14 +43,13 @@ def main():
     server_socket.bind((HOST, PORT))
     server_socket.listen()
     
-    print(f"Lyssnar efter knapptryck på {HOST}:{PORT}...")
+    print(f"Lyssnar efter knapptryck på {HOST}:{PORT}... (Tryck SPACE för att manuellt toggla)")
 
     is_recording = False
     emotion_process = None
     audio_process = None
-    audio_file = "current_recording.mp3"
+    audio_file = "current_recording.wav" # Ändrat till .wav för din kompis script
     
-    # Detta är magin som löser "ModuleNotFoundError"
     python_path = sys.executable 
 
     while True:
@@ -36,10 +65,17 @@ def main():
                 if not is_recording:
                     print("\n[+] Signal mottagen: STARTAR processer")
                     
-                    # Kör skripten med dina egna fungerande sökvägar. 
-                    # Uppdatera dessa till exakt det du använde när datorn faktiskt hittade filerna.
                     emotion_process = subprocess.Popen([python_path, "../EmotionRecognition/EmotionalRecognition.py"])
-                    audio_process = subprocess.Popen([python_path, "../Integration/record_audio.py", audio_file])
+                    
+                    # --- ÄNDRING: Startar med stdin=PIPE för att kunna skicka "Enter" ---
+                    audio_process = subprocess.Popen(
+                        [python_path, "../test_transcription_only.py", audio_file], #../EmotionRecognition/RecordAudio.py
+                        stdin=subprocess.PIPE,
+                        text=True
+                    )
+                    # Skickar första Enter för att börja spela in
+                    audio_process.stdin.write('\n')
+                    audio_process.stdin.flush()
                     
                     is_recording = True
                     
@@ -51,15 +87,17 @@ def main():
                         emotion_process.wait() 
                         
                     if audio_process:
-                        audio_process.terminate()
+                        # --- ÄNDRING: Skickar andra Enter istället för terminate ---
+                        print("[*] Skickar 'Enter' till inspelaren...")
+                        audio_process.stdin.write('\n')
+                        audio_process.stdin.flush()
+                        # Väntar på att den ska spara och köra transkribering automatiskt
                         audio_process.wait()
                         
-                    print("[*] Processer stoppade. Startar transkribering...")
-                    
-                    subprocess.Popen([python_path, "../transcription/transcribe.py", audio_file])
+                    # --- ÄNDRING: Transkribering anropas nu av record_audio.py, så vi hoppar över den här ---
                     
                     is_recording = False
-                    print("[*] Återgår till vänteläge för nästa iteration...")
+                    print("[*] Färdig. Återgår till vänteläge...")
 
 if __name__ == "__main__":
     main()
