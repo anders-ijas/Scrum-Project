@@ -5,6 +5,21 @@ import os
 import threading
 import keyboard
 
+# Get the absolute path to the project root
+current_dir = os.path.dirname(os.path.abspath(__file__))  # integration folder
+project_root = os.path.dirname(current_dir)               # Scrum-Project folder
+emotion_path = os.path.join(project_root, "emotionrecognition")
+
+# Add to sys.path so we can import RecordAudio
+sys.path.insert(0, emotion_path)
+
+# Debug prints
+print(f"[*] Added to path: {emotion_path}")
+print(f"[*] Files in emotionrecognition: {os.listdir(emotion_path) if os.path.exists(emotion_path) else 'NOT FOUND'}")
+
+from RecordAudio import recordAudio
+print("[*] RecordAudio imported successfully!")
+
 # Konfiguration
 DESIRED_HOST = '10.0.0.1'
 PORT = 65432
@@ -47,10 +62,9 @@ def main():
 
     is_recording = False
     emotion_process = None
-    audio_process = None
-    audio_file = "current_recording.wav" # Ändrat till .wav för din kompis script
-    
-    python_path = sys.executable 
+    audio_stop_event = None
+    audio_thread = None
+    current_timestamp = None
 
     while True:
         conn, addr = server_socket.accept()
@@ -65,17 +79,19 @@ def main():
                 if not is_recording:
                     print("\n[+] Signal mottagen: STARTAR processer")
                     
-                    emotion_process = subprocess.Popen([python_path, "../EmotionRecognition/EmotionalRecognition.py"])
+                    # Start emotion recognition
+                    emotion_script = os.path.join(project_root, "emotionrecognition", "EmotionalRecognition.py")
+                    emotion_process = subprocess.Popen([sys.executable, emotion_script])
                     
-                    # --- ÄNDRING: Startar med stdin=PIPE för att kunna skicka "Enter" ---
-                    audio_process = subprocess.Popen(
-                        [python_path, "../test_transcription_only.py", audio_file], #../EmotionRecognition/RecordAudio.py
-                        stdin=subprocess.PIPE,
-                        text=True
+                    # Start audio recording directly (not as subprocess)
+                    from datetime import datetime
+                    current_timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                    audio_stop_event = threading.Event()
+                    audio_thread = threading.Thread(
+                        target=recordAudio,
+                        args=("recording", current_timestamp, audio_stop_event)
                     )
-                    # Skickar första Enter för att börja spela in
-                    audio_process.stdin.write('\n')
-                    audio_process.stdin.flush()
+                    audio_thread.start()
                     
                     is_recording = True
                     
@@ -85,16 +101,14 @@ def main():
                     if emotion_process:
                         emotion_process.terminate()
                         emotion_process.wait() 
-                        
-                    if audio_process:
-                        # --- ÄNDRING: Skickar andra Enter istället för terminate ---
-                        print("[*] Skickar 'Enter' till inspelaren...")
-                        audio_process.stdin.write('\n')
-                        audio_process.stdin.flush()
-                        # Väntar på att den ska spara och köra transkribering automatiskt
-                        audio_process.wait()
-                        
-                    # --- ÄNDRING: Transkribering anropas nu av record_audio.py, så vi hoppar över den här ---
+                    
+                    if audio_stop_event:
+                        audio_stop_event.set()
+                    
+                    if audio_thread:
+                        audio_thread.join()
+                    
+                    print(f"[*] Audio saved to: transcription/input/{current_timestamp}.wav")
                     
                     is_recording = False
                     print("[*] Färdig. Återgår till vänteläge...")
