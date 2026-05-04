@@ -30,21 +30,19 @@ four_cc = cv2.VideoWriter_fourcc(*"mp4v")
 
 # Convolutional Neural Network with layering and weights from VGG19 with further image classification training on the FER13 Dataset.
 FER13_model = tf.keras.models.load_model(
-    "model_FER13_VGG19.keras",
-
+    str(BASE_DIR / "model_FER13_VGG19.keras"),
     compile=False
 )
 
 # Convolutional Neural Network with layering and weights from VGG19 with further image classification training on the RAF Dataset.
 RAF_model = tf.keras.models.load_model(
-    "model_2.keras",
-
+    str(BASE_DIR / "model_2.keras"),
     compile=False
 )
 
 # Classifier to detect and crop out faces
 haarcascade = cv2.CascadeClassifier(
-    "haarcascade_frontalface_default.xml"
+    str(BASE_DIR / "haarcascade_frontalface_default.xml")
 )
 
 mapper = ['anger', 'disgust', 'fear', 'happiness', 'sadness', 'surprise', 'neutral']
