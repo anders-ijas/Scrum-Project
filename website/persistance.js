@@ -1,5 +1,6 @@
-import {db} from "./firebase_util.js";
-import {collection, addDoc, setDoc, doc, query, where, orderBy, getDocs} from "firebase/firestore";import { model } from "./model.js";
+import { db } from "./firebase_util.js";
+import { collection, addDoc, setDoc, doc, query, where, getDocs } from "firebase/firestore";
+import { model } from "./model.js";
 import { sessionID } from "./src/index.jsx";
 
 export async function archiveCurrentToPrevious(currentData) {
@@ -12,10 +13,11 @@ export async function archiveCurrentToPrevious(currentData) {
         question: currentData.question,
         answer: currentData.answer,
         accuracy: currentData.accuracy,
-        emotion: currentData.emotion,
-        rawInput: currentData.rawInput,
-        dataStream: currentData.dataStream,
-        archivedAt: new Date(),
+        emotion: currentData.emotion || "😐",
+        rawInput: currentData.rawInput || "",
+        dataStream: currentData.dataStream || 0,
+        emotionTimestamp: currentData.emotionTimestamp || 0, // --- ADDED ---
+        answerTimestampMs: currentData.answerTimestampMs || 0, // --- ADDED ---
         archived: true,
         sessionID: sessionID
     });
@@ -46,11 +48,12 @@ export async function inita() {
     };
     return setDoc(doc(db, "emotion", "current"), data);
 }
+
 export async function historyMatch() {
+    // --- CHANGED: Removed the orderBy("archivedAt") which hid documents ---
     const q = query(
         collection(db, "emotion"),
-        where("sessionID", "==", sessionID),
-        orderBy("archivedAt", "asc")
+        where("sessionID", "==", sessionID)
     );
     const snapshot = await getDocs(q);
     return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));

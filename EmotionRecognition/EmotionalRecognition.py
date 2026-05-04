@@ -21,18 +21,18 @@ out = cv2.VideoWriter('output.mp4', four_cc, 20.0, (frame_width, frame_height))
 
 # Convolutional Neural Network with layering and weights from VGG19 trained on the FER13 Dataset.
 FER13_model = tf.keras.models.load_model(
-    "/Users/alexanderknave/Desktop/KTH/Projekt/model_FER13_VGG19.keras",
+    "model_FER13_VGG19.keras",
     compile=False
 )
 # Convolutional Neural Network with layering and weights from VGG19 trained on the RAF Dataset.
 RAF_model = tf.keras.models.load_model(
-    "/Users/alexanderknave/Desktop/KTH/Projekt/RAF_model_2.keras",
+    "model_2.keras",
     compile=False
 )
 
 # Classifier to detect and crop out faces
 haarcascade = cv2.CascadeClassifier(
-    "/Users/alexanderknave/Desktop/KTH/Projekt/haarcascade_frontalface_default.xml"
+    "haarcascade_frontalface_default.xml"
 )
 
 mapper = ['anger', 'disgust', 'fear', 'happiness', 'sadness', 'surprise', 'neutral']
@@ -66,14 +66,14 @@ color_c = {
     "surprise":  (0, 165, 255),     # Orange
     "neutral":   (180, 180, 180)    # Grey
 }
-
+session_start_time = 0
 def preprocess_image_FER13(frame):
     img = cv2.resize(frame, (48, 48))
     img = img.astype("float32")
     return np.expand_dims(img, axis=0)
 
 def preprocess_image_RAF(frame):
-    img = cv2.resize(frame, (100, 100))
+    img = cv2.resize(frame, (48, 48))
     img = img.astype("float32")
     img = tf.keras.applications.vgg19.preprocess_input(img)
     return np.expand_dims(img, axis=0)
@@ -174,20 +174,23 @@ def faceRec(face, name, frame, x, y, w, h):
     return color, strength
 
 def to_row(color, all_strengths):
-
+    global session_start_time
+    elapsed_ms = int((time.time() - session_start_time) * 1000)
     timestamp = time.strftime("%T",(time.gmtime(time.time())))
     scores = list(all_strengths.values())
     max_score = max(scores)
     emotion_max = mapper[scores.index(max_score)]
 
-    firebase_logger.update_current_emotion(emotion_max, max_score)
-
+    firebase_logger.update_current_emotion(emotion_max, max_score, elapsed_ms)
 
     row = [max_score,emotion_max,color,*scores,timestamp]
     frame_data.append(row)
 
 
 def CameraStream(name):
+    global session_start_time
+    firebase_logger.get_active_session_id()
+    session_start_time = time.time()
     while True:
         ret, frame = camera.read()
 
