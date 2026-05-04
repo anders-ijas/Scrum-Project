@@ -1,3 +1,4 @@
+from pathlib import Path
 from tkinter import *
 import cv2
 from PIL import Image, ImageTk
@@ -12,29 +13,36 @@ import matplotlib.pyplot as plt
 from RecordAudio import *
 import threading
 from emotionIntegration import FirebaseLogger
-firebase_logger = FirebaseLogger("../integration/service-account.json")
+BASE_DIR = Path(__file__).resolve().parent
+PROJECT_ROOT = BASE_DIR.parent
+
+firebase_logger = FirebaseLogger(
+    str(PROJECT_ROOT / "integration" / "service-account.json")
+)
 
 flag = True
 
 camera = cv2.VideoCapture(0)
 frame_width = int(camera.get(cv2.CAP_PROP_FRAME_WIDTH))
 frame_height = int(camera.get(cv2.CAP_PROP_FRAME_HEIGHT))
-four_cc = cv2.VideoWriter_fourcc(*'mp4v')
+four_cc = cv2.VideoWriter_fourcc(*"mp4v")
+
 
 # Convolutional Neural Network with layering and weights from VGG19 with further image classification training on the FER13 Dataset.
 FER13_model = tf.keras.models.load_model(
-    "/Users/alexanderknave/Desktop/KTH/Projekt/model_FER13_VGG19.keras",
+    str(BASE_DIR / "model_FER13_VGG19.keras"),
     compile=False
 )
+
 # Convolutional Neural Network with layering and weights from VGG19 with further image classification training on the RAF Dataset.
 RAF_model = tf.keras.models.load_model(
-    "/Users/alexanderknave/Desktop/KTH/Projekt/RAF_model_2.keras",
+    str(BASE_DIR / "model_2.keras"),
     compile=False
 )
 
 # Classifier to detect and crop out faces
 haarcascade = cv2.CascadeClassifier(
-    "/Users/alexanderknave/Desktop/KTH/Projekt/haarcascade_frontalface_default.xml"
+    str(BASE_DIR / "haarcascade_frontalface_default.xml")
 )
 
 mapper = ['anger', 'disgust', 'fear', 'happiness', 'sadness', 'surprise', 'neutral']
@@ -73,7 +81,7 @@ def preprocess_image_FER13(frame):
     return np.expand_dims(img, axis=0)
 
 def preprocess_image_RAF(frame):
-    img = cv2.resize(frame, (100, 100))
+    img = cv2.resize(frame, (48, 48))
     img = img.astype("float32")
     img = tf.keras.applications.vgg19.preprocess_input(img)
     return np.expand_dims(img, axis=0)
