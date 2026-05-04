@@ -9,6 +9,7 @@ export const AppPresenter = observer(function AppPresenter(props) {
         answer={props.model.answer}
         accuracy={props.model.accuracy}
         emotion={props.model.emotion}
+        emotionColor={props.model.emotionColor}
         questionh={props.model.latestSnapshot.question}
         answerh={props.model.latestSnapshot.answer}
         accuracyh={props.model.latestSnapshot.accuracy}
