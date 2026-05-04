@@ -21,10 +21,7 @@ firebase_logger = FirebaseLogger("../Integration/service-account.json")
 
 flag = True
 
-camera = cv2.VideoCapture(0)
-frame_width = int(camera.get(cv2.CAP_PROP_FRAME_WIDTH))
-frame_height = int(camera.get(cv2.CAP_PROP_FRAME_HEIGHT))
-four_cc = cv2.VideoWriter_fourcc(*"mp4v")
+
 
 
 # Convolutional Neural Network with layering and weights from VGG19 with further image classification training on the FER13 Dataset.
@@ -199,6 +196,10 @@ def CameraStream(name,timestamp):
     global flag
     firebase_logger.get_active_session_id()
     session_start_time = time.time()
+    camera = cv2.VideoCapture(0)
+    frame_width = int(camera.get(cv2.CAP_PROP_FRAME_WIDTH))
+    frame_height = int(camera.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    four_cc = cv2.VideoWriter_fourcc(*"mp4v")
 
     out = cv2.VideoWriter(f'RecordingVideo{str(name).capitalize()}-{timestamp}.mp4', four_cc, 20.0, (frame_width, frame_height))
     while True:
