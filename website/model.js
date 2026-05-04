@@ -5,6 +5,7 @@ export const model = {
     answer: "",
     accuracy : "",
     emotion : "😐",
+    emotionColor: "",
     rawInput: "",
     dataStream:0,
     latestSnapshot: {
@@ -26,6 +27,9 @@ export const model = {
     },
     setCurrentEmotion(emotion){
         this.emotion = emotion;
+    },
+    setCurrentEmotionColor(color){
+        this.emotionColor = color;
     },
     setLatestSnapshot(snapshot) {
         this.latestSnapshot = snapshot;

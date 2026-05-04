@@ -47,11 +47,14 @@ function TipsSection() {
 
 export function AppView(props) {
   const currentEmotion = EMOTIONS[props.emotion] || { label: "Neutral", color: "#333" };
+  const emojiDisplayStyle = props.emotionColor
+    ? { background: props.emotionColor }
+    : undefined;
 
   return (
     <div className="app-container">
       <div className="emotion-card">
-        <div className="emoji-display">
+        <div className="emoji-display" style={emojiDisplayStyle}>
           <div className="emoji-icon">{props.emotion || "😐"}</div>
           <h1 className="emotion-label">{currentEmotion.label}</h1>
         </div>

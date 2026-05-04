@@ -13,12 +13,8 @@ import matplotlib.pyplot as plt
 from RecordAudio import *
 import threading
 from emotionIntegration import FirebaseLogger
-BASE_DIR = Path(__file__).resolve().parent
-PROJECT_ROOT = BASE_DIR.parent
+firebase_logger = FirebaseLogger("../Integration/service-account.json")
 
-firebase_logger = FirebaseLogger(
-    str(PROJECT_ROOT / "integration" / "service-account.json")
-)
 
 flag = True
 
@@ -30,19 +26,18 @@ four_cc = cv2.VideoWriter_fourcc(*"mp4v")
 
 # Convolutional Neural Network with layering and weights from VGG19 with further image classification training on the FER13 Dataset.
 FER13_model = tf.keras.models.load_model(
-    str(BASE_DIR / "model_FER13_VGG19.keras"),
+    "model_FER13_VGG19.keras",
     compile=False
 )
 
 # Convolutional Neural Network with layering and weights from VGG19 with further image classification training on the RAF Dataset.
 RAF_model = tf.keras.models.load_model(
-    str(BASE_DIR / "model_2.keras"),
+    "model_2.keras",
     compile=False
 )
 
-# Classifier to detect and crop out faces
 haarcascade = cv2.CascadeClassifier(
-    str(BASE_DIR / "haarcascade_frontalface_default.xml")
+    "haarcascade_frontalface_default.xml"
 )
 
 mapper = ['anger', 'disgust', 'fear', 'happiness', 'sadness', 'surprise', 'neutral']
@@ -190,7 +185,7 @@ def to_row(color, all_strengths):
     max_score = max(scores)
     emotion_max = mapper[scores.index(max_score)]
 
-    firebase_logger.update_current_emotion(emotion_max, max_score, elapsed_ms)
+    firebase_logger.update_current_emotion(emotion_max, max_score, elapsed_ms, color_bgr=color)
 
     row = [max_score,emotion_max,color,*scores,timestamp]
     frame_data.append(row)

@@ -83,13 +83,11 @@ class FirebaseLogger:
         except Exception as e:
             print(f"❌ Emotion archive failed: {e}")
     
-    def update_current_emotion(self, label, score, emotion_timestamp=None):
-        """
-        Updates the 'current' doc and triggers an archive if the emotion changes[cite: 13].
-        """
+    def update_current_emotion(self, label, score, emotion_timestamp=None, color_bgr=None):
         current_time = time.time()
         emotion_str = str(label)
         accuracy_str = str(round(float(score) * 100, 2))
+        color_bgr_data = [int(value) for value in color_bgr] if color_bgr is not None else None
 
         if self.last_emotion is None:
             self.last_emotion = emotion_str
@@ -110,6 +108,8 @@ class FirebaseLogger:
                     "emotionTimestamp": emotion_timestamp, # Keeps 'current' in sync with recognition[cite: 1, 13]
                     "last_updated": datetime.datetime.now(datetime.timezone.utc)
                 }
+                if color_bgr_data is not None:
+                    doc_data["colorBgr"] = color_bgr_data
                 
                 self.db.collection("emotion").document("current").update(doc_data)
                 

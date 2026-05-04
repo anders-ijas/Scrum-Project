@@ -80,12 +80,14 @@ function updateModelFromFirestore(data) {
     const answer = String(data.answer ?? "").trim();
     const accuracy = String(data.accuracy ?? "").trim();
     const parsedEmotion = parseEmotion(String(data.emotion || data.emotion || "").trim());
+    const emotionColor = parseColorBgr(data.colorBgr);
 
     if (
         question === reactiveModel.question &&
         answer === reactiveModel.answer &&
         accuracy === reactiveModel.accuracy &&
-        parsedEmotion === reactiveModel.emotion
+        parsedEmotion === reactiveModel.emotion &&
+        emotionColor === reactiveModel.emotionColor
     ) {
         return;
     }
@@ -98,6 +100,7 @@ function updateModelFromFirestore(data) {
     reactiveModel.setCurrentAnswer(answer);
     reactiveModel.setCurrentAccuracy(accuracy);
     reactiveModel.setCurrentEmotion(parsedEmotion);
+    reactiveModel.setCurrentEmotionColor(emotionColor);
     if (reactiveModel.dataStream != 2) {
         reactiveModel.setDataStream(1);
     }
@@ -130,7 +133,19 @@ export function parseEmotion(emotion) {
     }
 }
 
-export function sessionKeyMaker() {
+function parseColorBgr(colorBgr) {
+    if (!Array.isArray(colorBgr) || colorBgr.length < 3) {
+        return "";
+    }
+
+    const [blue, green, red] = colorBgr.map((value) => Number(value));
+    if ([blue, green, red].some((value) => Number.isNaN(value))) {
+        return "";
+    }
+
+    return `rgb(${red}, ${green}, ${blue})`;
+}
+export function sessionKeyMaker(){
     const sessionID = crypto.randomUUID();
     return sessionID;
 }
