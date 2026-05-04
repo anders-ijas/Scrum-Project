@@ -3,12 +3,13 @@ import { db, initAnonymousAuth } from "./firebase_util.js";
 import { doc, onSnapshot } from "firebase/firestore";
 import { archiveCurrentToPrevious } from "./persistance.js";
 
-// Track what's currently in Firebase's "current" document
 let firebaseCurrentData = {
     question: "",
     answer: "",
     accuracy: "",
     emotion: "",
+    emotionTimestamp: 0,
+    answerTimestampMs: 0, // --- ADDED ---
     rawInput: "",
     dataStream: 0
 };
@@ -27,12 +28,15 @@ export function fetchData() {
 
             const data = docSnap.data();
             
-            // ARCHIVE: Check if question or answer changed BEFORE updating
             if (firebaseCurrentData.question && firebaseCurrentData.answer) {
                 if (data.question !== firebaseCurrentData.question || 
                     data.answer !== firebaseCurrentData.answer) {
                     try {
-                        await archiveCurrentToPrevious(firebaseCurrentData);
+                        const dataToArchive = {
+                            ...firebaseCurrentData,
+                            emotion: firebaseCurrentData.emotion || "😐"
+                        };
+                        await archiveCurrentToPrevious(dataToArchive);
                         console.log("Archived previous data");
                     } catch (error) {
                         console.error("Error archiving data:", error);
@@ -40,12 +44,13 @@ export function fetchData() {
                 }
             }
             
-            // Update the tracked Firebase data
             firebaseCurrentData = {
                 question: String(data.question ?? "").trim(),
                 answer: String(data.answer ?? "").trim(),
                 accuracy: String(data.accuracy ?? "").trim(),
-                emotion: String(data.emotion ?? "").trim(),
+                emotion: parseEmotion(String(data.emotion ?? "").trim()),
+                emotionTimestamp: data.emotionTimestamp ?? 0, // --- ADDED ---
+                answerTimestampMs: data.answerTimestampMs ?? 0, // --- ADDED ---
                 rawInput: data.rawInput ?? "",
                 dataStream: data.dataStream ?? 0
             };
@@ -97,9 +102,8 @@ function updateModelFromFirestore(data) {
         reactiveModel.setDataStream(1);
     }
 }
-export function historyMatch(){
 
-}
+export function historyMatch() {}
 
 export function parseEmotion(emotion) {
     switch (emotion.toLowerCase()) {
@@ -125,7 +129,8 @@ export function parseEmotion(emotion) {
             return "😐";
     }
 }
-export function sessionKeyMaker(){
+
+export function sessionKeyMaker() {
     const sessionID = crypto.randomUUID();
     return sessionID;
 }

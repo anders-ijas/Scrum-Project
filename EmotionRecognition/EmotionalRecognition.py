@@ -30,19 +30,21 @@ four_cc = cv2.VideoWriter_fourcc(*"mp4v")
 
 # Convolutional Neural Network with layering and weights from VGG19 with further image classification training on the FER13 Dataset.
 FER13_model = tf.keras.models.load_model(
-    str(BASE_DIR / "model_FER13_VGG19.keras"),
+    "model_FER13_VGG19.keras",
+
     compile=False
 )
 
 # Convolutional Neural Network with layering and weights from VGG19 with further image classification training on the RAF Dataset.
 RAF_model = tf.keras.models.load_model(
-    str(BASE_DIR / "model_2.keras"),
+    "model_2.keras",
+
     compile=False
 )
 
 # Classifier to detect and crop out faces
 haarcascade = cv2.CascadeClassifier(
-    str(BASE_DIR / "haarcascade_frontalface_default.xml")
+    "haarcascade_frontalface_default.xml"
 )
 
 mapper = ['anger', 'disgust', 'fear', 'happiness', 'sadness', 'surprise', 'neutral']
@@ -74,7 +76,7 @@ color_c = {
     "surprise":  (0, 165, 255),     # Orange
     "neutral":   (180, 180, 180)    # Grey
 }
-
+session_start_time = 0
 def preprocess_image_FER13(frame):
     img = cv2.resize(frame, (48, 48))
     img = img.astype("float32")
@@ -183,20 +185,24 @@ def faceRec(face, name, frame, x, y, w, h):
     return color, strength
 
 def to_row(color, all_strengths):
-
+    global session_start_time
+    elapsed_ms = int((time.time() - session_start_time) * 1000)
     timestamp = time.strftime("%T",(time.gmtime(time.time())))
     scores = list(all_strengths.values())
     max_score = max(scores)
     emotion_max = mapper[scores.index(max_score)]
 
-    firebase_logger.update_current_emotion(emotion_max, max_score)
+    firebase_logger.update_current_emotion(emotion_max, max_score, elapsed_ms)
 
     row = [max_score,emotion_max,color,*scores,timestamp]
     frame_data.append(row)
 
 
 def CameraStream(name,timestamp):
+    global session_start_time
     global flag
+    firebase_logger.get_active_session_id()
+    session_start_time = time.time()
 
     out = cv2.VideoWriter(f'RecordingVideo{str(name).capitalize()}-{timestamp}.mp4', four_cc, 20.0, (frame_width, frame_height))
     while True:
