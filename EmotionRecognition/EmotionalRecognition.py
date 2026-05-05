@@ -191,7 +191,7 @@ def to_row(color, all_strengths):
     frame_data.append(row)
 
 
-def CameraStream(name,timestamp):
+def CameraStream(name,timestamp, thread):
     global session_start_time
     global flag
     firebase_logger.get_active_session_id()
@@ -202,6 +202,7 @@ def CameraStream(name,timestamp):
     four_cc = cv2.VideoWriter_fourcc(*"mp4v")
 
     out = cv2.VideoWriter(f'RecordingVideo{str(name).capitalize()}-{timestamp}.mp4', four_cc, 20.0, (frame_width, frame_height))
+    thread.start()
     while True:
         ret, frame = camera.read()
 
@@ -244,9 +245,9 @@ def main():
 
 #   Run audio recording in a seperate thread
     t = threading.Thread(target=recordAudio,args=(name,timestamp,stop_event))
-    t.start()
+    #t.start()
 
-    CameraStream(name,timestamp)
+    CameraStream(name,timestamp,t)
     print("Press enter to finish recording.")
 
 #    Wait for video recording to finish
