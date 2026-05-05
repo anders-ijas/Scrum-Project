@@ -3,7 +3,9 @@ import subprocess
 import sys
 import os
 import threading
+import time
 import keyboard
+from datetime import datetime
 
 # Get the absolute path to the project root
 current_dir = os.path.dirname(os.path.abspath(__file__))  # integration folder
@@ -52,19 +54,30 @@ def listen_for_spacebar():
 listener_thread = threading.Thread(target=listen_for_spacebar, daemon=True)
 listener_thread.start()
 
+# Rensa gamla flag-filer
+for f in os.listdir(project_root):
+    if f.startswith("record_") and f.endswith(".flag"):
+        os.remove(os.path.join(project_root, f))
+
+# Starta kameran direkt
+current_timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+record_flag_path = os.path.join(project_root, f"record_{current_timestamp}.flag")
+emotion_script = os.path.join(project_root, "emotionrecognition", "EmotionalRecognition.py")
+emotion_process = subprocess.Popen([sys.executable, emotion_script, "recording", record_flag_path])
+print("[*] Kamera startad automatiskt.")
+
 def main():
+    global record_flag_path
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1) 
     server_socket.bind((HOST, PORT))
     server_socket.listen()
-    
-    print(f"Lyssnar efter knapptryck på {HOST}:{PORT}... (Tryck SPACE för att manuellt toggla)")
+
+    print(f"Lyssnar efter knapptryck på {HOST}:{PORT}... (Tryck SPACE för att starta/stoppa inspelning)")
 
     is_recording = False
-    emotion_process = None
     audio_stop_event = None
     audio_thread = None
-    current_timestamp = None
 
     while True:
         conn, addr = server_socket.accept()
@@ -77,15 +90,10 @@ def main():
             
             if command == 'TOGGLE':
                 if not is_recording:
-                    print("\n[+] Signal mottagen: STARTAR processer")
-                    
-                    # Start emotion recognition
-                    emotion_script = os.path.join(project_root, "emotionrecognition", "EmotionalRecognition.py")
-                    emotion_process = subprocess.Popen([sys.executable, emotion_script])
-                    
-                    # Start audio recording directly (not as subprocess)
-                    from datetime import datetime
-                    current_timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                    print("\n[+] Signal mottagen: STARTAR inspelning")
+
+                    open(record_flag_path, 'w').close()
+
                     audio_stop_event = threading.Event()
                     audio_thread = threading.Thread(
                         target=recordAudio,
@@ -95,9 +103,10 @@ def main():
                     
                     is_recording = True
                     
+                    print("[*] Inspelning startad.")
                 else:
-                    print("\n[-] Signal mottagen: STOPPAR processer")
-                    
+                    print("\n[-] Signal mottagen: STOPPAR inspelning")
+
                     if emotion_process:
                         emotion_process.terminate()
                         emotion_process.wait() 
@@ -107,7 +116,10 @@ def main():
                     
                     if audio_thread:
                         audio_thread.join()
-                    
+
+                    if record_flag_path and os.path.exists(record_flag_path):
+                        os.remove(record_flag_path)
+
                     print(f"[*] Audio saved to: transcription/input/{current_timestamp}.wav")
                     
                     is_recording = False

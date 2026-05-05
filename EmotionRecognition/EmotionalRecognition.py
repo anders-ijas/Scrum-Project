@@ -191,21 +191,35 @@ def to_row(color, all_strengths):
     frame_data.append(row)
 
 
-def CameraStream(name,timestamp, thread):
+def CameraStream(name,timestamp, record_flag_path=None):
     global session_start_time
     global flag
     firebase_logger.get_active_session_id()
-    session_start_time = time.time()
     camera = cv2.VideoCapture(0)
     frame_width = int(camera.get(cv2.CAP_PROP_FRAME_WIDTH))
     frame_height = int(camera.get(cv2.CAP_PROP_FRAME_HEIGHT))
-    four_cc = cv2.VideoWriter_fourcc(*"mp4v")
+    four_cc = cv2.VideoWriter_fourcc(*"XVID")
+    out = cv2.VideoWriter(f'RecordingVideo{str(name).capitalize()}-{timestamp}.avi', four_cc, 20.0, (frame_width, frame_height))
 
-    out = cv2.VideoWriter(f'RecordingVideo{str(name).capitalize()}-{timestamp}.mp4', four_cc, 20.0, (frame_width, frame_height))
-    thread.start()
+    # Show camera preview while waiting for record signal
+    print("[*] Camera ready. Waiting for record signal...")
+    while record_flag_path and not os.path.exists(record_flag_path):
+        ret, frame = camera.read()
+        if not ret:
+            continue
+        cv2.imshow('Camera', frame)
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            stop_event.set()
+            camera.release()
+            out.release()
+            cv2.destroyAllWindows()
+            return
+
+    session_start_time = time.time()
+    print("[*] Recording started.")
+
     while True:
         ret, frame = camera.read()
-
         if not ret:
             continue
 
@@ -239,15 +253,20 @@ def CameraStream(name,timestamp, thread):
 def main():
 
     # File name
-    print("Enter your name:")
-    name = input()
-    timestamp = time.strftime("%Y-%m-%d_%H-%M",(time.gmtime(time.time())))
+    # print("Enter your name:")
+    # name = input()
+    # timestamp = time.strftime("%Y-%m-%d_%H-%M",(time.gmtime(time.time())))    
+    
+    import sys
+    name = sys.argv[1] if len(sys.argv) > 1 else input("Enter your name: ")
+    timestamp = time.strftime("%Y-%m-%d_%H-%M", (time.gmtime(time.time())))
+    record_flag_path = sys.argv[2] if len(sys.argv) > 2 else None
 
 #   Run audio recording in a seperate thread
     t = threading.Thread(target=recordAudio,args=(name,timestamp,stop_event))
     #t.start()
 
-    CameraStream(name,timestamp,t)
+    CameraStream(name, timestamp, record_flag_path)
     print("Press enter to finish recording.")
 
 #    Wait for video recording to finish
