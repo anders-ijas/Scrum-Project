@@ -21,7 +21,7 @@ from RecordAudio import recordAudio
 print("[*] RecordAudio imported successfully!")
 
 # Konfiguration
-DESIRED_HOST = '172.20.10.14'
+DESIRED_HOST = '10.0.0.1'
 PORT = 65432
 
 def get_valid_host(target_ip):

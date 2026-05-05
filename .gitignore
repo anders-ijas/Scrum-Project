@@ -4,3 +4,4 @@ integration/service-account.json
 service-account.json
 /website/venv
 /integration/transcription
+*.pyc
