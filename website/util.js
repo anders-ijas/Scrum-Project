@@ -101,6 +101,7 @@ function updateModelFromFirestore(data) {
     reactiveModel.setCurrentAccuracy(accuracy);
     reactiveModel.setCurrentEmotion(parsedEmotion);
     reactiveModel.setCurrentEmotionColor(emotionColor);
+    reactiveModel.setTranscribed(data.transcribed);
     if (reactiveModel.dataStream != 2) {
         reactiveModel.setDataStream(1);
     }

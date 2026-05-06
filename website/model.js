@@ -8,6 +8,7 @@ export const model = {
     emotionColor: "",
     rawInput: "",
     dataStream:0,
+    transcribed: true,
     latestSnapshot: {
         question : "",
         answer: "",
@@ -43,5 +44,8 @@ export const model = {
     },
     setDataStream(stream){
         this.dataStream = stream;
+    },
+    setTranscribed(transcribed) {
+        this.transcribed = transcribed;
     }
 }
