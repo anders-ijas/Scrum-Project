@@ -1,21 +1,21 @@
-# Audio Transcription with Speaker Diarization
+# Audio Transcription
 
-Transcribe audio files with automatic speaker identification using Whisper, WhisperX, and Pyannote.
+Transcribe audio files and structure conversations as question/answer exchanges using Whisper and WhisperX.
 
-This is a module within the larger project. It handles audio transcription and speaker diarization independently.
+This is a module within the larger project. It handles audio transcription and conversation structuring independently.
 
 **Features:**
 - High-quality transcription (Whisper large-v3-turbo model)
-- Automatic speaker identification (diarization)
 - Word-level alignment
+- Automatic question/answer exchange detection
 
 **Output format:**
-- **JSON**: Complete transcription with word-level timestamps and speaker labels
+- **JSON**: Transcription structured as exchanges with timestamps
 
 ## Prerequisites
 
 - **Python 3.12** (required; does not work with Python 3.14)
-- **FFmpeg** (required for audio processing)
+- **FFmpeg 7.x** (required for audio processing)
 - CPU or CUDA capable GPU (optional, but recommended)
 
 ## Setup
@@ -24,7 +24,7 @@ This is a module within the larger project. It handles audio transcription and s
 
 **Windows (using winget):**
 ```bash
-winget install FFmpeg
+winget install "FFmpeg (Essentials Build)" --version 7.1
 ```
 
 **Linux:**
@@ -48,7 +48,7 @@ ffmpeg -version
 From the `transcription/` directory:
 
 ```bash
-python -m venv venv
+py -3.12 -m venv venv
 ```
 
 **Activate virtual environment:**
@@ -87,9 +87,9 @@ pip install -r requirements_gpu.txt
 pip install -r requirements_common.txt
 ```
 
-The script automatically detects and uses GPU if available, otherwise falls back to CPU.
-
 ### 4. Get Hugging Face token
+
+Required for the word-level alignment model.
 
 1. Go to https://huggingface.co/settings/tokens
 2. Create a new token (read access is enough)
@@ -106,14 +106,17 @@ HF_TOKEN=hf_your_actual_token_here
 **Note:** The `.env` file is in `.gitignore` and should never be committed.
 
 ## Usage
+
+Place audio files in the `transcription/input/` folder, then run:
+
 ```bash
-python transcribe.py <audio_file>
+python transcribe.py <audio_filename>
 ```
 
 **Examples:**
 ```bash
 python transcribe.py meeting.mp3
-python transcribe.py lectures/lecture_01.wav
+python transcribe.py lecture.wav
 ```
 
 **Supported formats:** MP3, WAV
@@ -121,40 +124,35 @@ python transcribe.py lectures/lecture_01.wav
 ### Output
 
 Files are saved in `transcription/output/`:
-- `filename.json` - Full transcription data
+- `filename.json` - Transcription structured as exchanges
 
-### Configuration
+### How it works
 
-The script automatically handles device detection and speaker role assignment. No manual configuration needed.
+The script classifies each segment based on content:
+- Segments ending with `?` → question → vuxen
+- Segment following a question → answer → barn
+- Everything else → statement → vuxen
 
-### Automatic features:
-- GPU/CPU detection: Automatically uses CUDA if available, otherwise CPU
-- Adult speaker identification: Based on the first question in the conversation
-- Speaker role assignment: All segments from the adult speaker → "vuxen", others → "barn"
-- Segment classification: Question (ends with ?), Answer (short, ≤4 words), Statement (longer)
+Questions and answers are grouped into exchanges for easy alignment with emotion data.
 
-### Performance notes:
+### Performance notes
 
 - For **CPUs**: `int8` is faster but slightly less accurate
 - For **GPUs**: Use `float16` or `float32` for better quality
-- Models are automatically downloaded on first run (~3-5 GB)
+- Models are automatically downloaded on first run (~1-2 GB)
 
 ## Troubleshooting
 
 ### "FFmpeg not found" or "FileNotFoundError"
 - FFmpeg is not installed or not in your PATH
-- Follow the FFmpeg installation instructions above
+- Make sure you installed FFmpeg 7.x (not 8.x)
 - Restart your terminal after installing
 
 ### "HF_TOKEN not found"
 - Make sure `.env` file exists in the `transcription/` directory
 - Verify the token is correctly set
-- Make sure `python-dotenv` is installed
-
-### Diarization fails
-- Ensure you have proper HF_TOKEN set
-- Check internet connection for model download
 
 ### Audio won't load
 - Try converting to MP3 or WAV format
 - Check file isn't corrupted
+- Make sure the file is placed in the `input/` folder

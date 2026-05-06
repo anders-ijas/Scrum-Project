@@ -8,7 +8,6 @@ import warnings
 from datetime import datetime
 from dotenv import load_dotenv
 import whisperx
-from whisperx.diarize import DiarizationPipeline
 from emotionIntegration import FirebaseLogger
 
 warnings.filterwarnings("ignore", category=UserWarning, module="pyannote.audio.core.io")
@@ -114,8 +113,7 @@ if DEVICE == "cuda":
 
 print(f"Using device: {DEVICE}", file=sys.stderr)
 
-
-try: 
+try:
     print("Loading audio...")
     audio = whisperx.load_audio(AUDIO_FILE)
     audio_duration = len(audio) / 16000
@@ -123,12 +121,12 @@ try:
 
     # Varning för mycket korta ljudfiler där diarization kan vara opålitlig
     if audio_duration < 10:
-        warning_msg(f"Audio duration is very short: {audio_duration:.2f} seconds - diarization may be inaccurate.", session_id)
+        warning_msg(f"Audio duration is very short: {audio_duration:.2f} seconds - transcription may be inaccurate.", session_id)
 
     # Steg 1: Transkribera
     print("Loading Whisper model...")
     model = whisperx.load_model("large-v3-turbo", DEVICE, compute_type=COMPUTE_TYPE)
-    
+
     print("Transcribing...", file=sys.stderr)
     result = model.transcribe(audio, language=LANGUAGE, batch_size=BATCH_SIZE)
 
@@ -161,96 +159,59 @@ try:
     if 'model_a' in locals():
         del model_a
 
-    # Steg 3: Diarize (bestäm vem som talar när)
-    print("Diarizing...", file=sys.stderr)
-    try:
-        diarize_model = DiarizationPipeline(
-            model_name="pyannote/speaker-diarization-community-1",
-            token=HF_TOKEN,
-            device=DEVICE,
-        )
-        diarize_segments = diarize_model(audio, min_speakers=2, max_speakers=2)
-        result = whisperx.assign_word_speakers(diarize_segments, result)
-        print("AI diarization completed", file=sys.stderr)
-    except Exception as e:
-        warning_msg(f"Diarization failed: {str(e)}", session_id)
-
-    # Steg 4: ge talarna läsbara namn (vuxen, barn, okänd) baserat på diarization
-    speaker_map = {}
-    speaker_index = 0
-    speaker_names = ["vuxen", "barn", "okänd_1", "okänd_2"]
-
-    for seg in result["segments"]:
-        for word in seg.get("words", []):
-            speaker = word.get("speaker", "UNKNOWN")
-            if speaker not in speaker_map and speaker != "UNKNOWN":
-                if speaker_index < len(speaker_names):
-                    speaker_map[speaker] = speaker_names[speaker_index]
-                else:
-                    speaker_map[speaker] = f"okänd_{speaker_index}"
-                speaker_index += 1
-
-    # Steg 5: Bygg segment (första steget för att få text och roller)
+    # Steg 3: Klassificera segment (fråga = vuxen, svar = barn)
     raw_segments = []
-    
+
     for seg in result.get("segments", []):
         if not seg.get("words"):
             continue
-        
-        spk = seg["words"][0].get("speaker", "UNKNOWN")
-        role = speaker_map.get(spk, "okänd")
-        
+
         text = " ".join([w["word"] for w in seg["words"]]).strip()
-        words = len(text.split())
-        
-        # Bestäm typ baserat på frågetecken och kontext
+
         if text.endswith("?"):
             seg_type = "question"
+            speaker = "vuxen"
         elif len(raw_segments) > 0 and raw_segments[-1]["type"] == "question":
             seg_type = "answer"
+            speaker = "barn"
         else:
             seg_type = "statement"
-        
-        speaker_label = spk
-        
+            speaker = "vuxen"
+
         raw_segments.append({
-            "speaker": role,
-            "speakerLabel": speaker_label,
+            "speaker": speaker,
             "text": text,
             "type": seg_type,
             "startMs": round(seg["words"][0]["start"] * 1000),
             "endMs": round(seg["words"][-1]["end"] * 1000),
         })
 
-    # Steg 6: Bygg exchanges (fråga/svar-block)
+    # Steg 4: Bygg exchanges (fråga/svar-block)
     exchanges = []
     exchange_id = 1
     i = 0
-    
+
     while i < len(raw_segments):
         if raw_segments[i]["type"] == "question":
             question = {
                 "text": raw_segments[i]["text"],
                 "speaker": raw_segments[i]["speaker"],
-                "speakerLabel": raw_segments[i]["speakerLabel"],
                 "startMs": raw_segments[i]["startMs"],
                 "endMs": raw_segments[i]["endMs"],
             }
-            
-            # Leta efter svar (nästa segment som är answer)
+
             answer = None
             if i + 1 < len(raw_segments) and raw_segments[i+1]["type"] == "answer":
                 answer = {
                     "text": raw_segments[i+1]["text"],
                     "speaker": raw_segments[i+1]["speaker"],
-                    "speakerLabel": raw_segments[i+1]["speakerLabel"],
                     "startMs": raw_segments[i+1]["startMs"],
                     "endMs": raw_segments[i+1]["endMs"],
                 }
-                i += 2  # Hoppa över både fråga och svar
+                i += 2
             else:
-                i += 1  # Hoppa bara över frågan (inget svar)
-            
+                i += 1
+
             exchanges.append({
                 "exchangeId": exchange_id,
                 "question": question,
@@ -261,9 +222,9 @@ try:
             i += 1
 
     if len(exchanges) == 0:
-        warning_msg("No exchanges (question/answer pairs) found after processing", session_id)
+        warning_msg("No exchanges found after processing", session_id)
 
-    # Steg 7: Bygg komplett utdata med exchanges
+    # Steg 5: Bygg komplett utdata
     output_data = {
         "status": "success",
         "sessionId": session_id,
@@ -272,20 +233,27 @@ try:
         "exchanges": exchanges
     }
 
-    # Steg 8: Spara utdata som JSON-fil
+    # Steg 6: Spara JSON
     base = os.path.splitext(os.path.basename(AUDIO_FILE))[0]
     json_path = os.path.join(OUTPUT_DIR, f"{base}.json")
 
     with open(json_path, "w", encoding="utf-8") as f:
         json.dump(output_data, f, ensure_ascii=False, indent=2)
 
-    # Steg 9: Skriv ut resultatet i JSON-format till stdout och logga viktig info till stderr
-    fb_logger.sync_conversation_start(output_data)
+    # Steg 7: Skicka till Firebase och skriv ut
+    if exchanges:
+        first = exchanges[0]
+        fb_logger.sync_conversation_start({
+            "segments": [
+                {"text": first["question"]["text"]},
+                {"text": first["answer"]["text"] if first["answer"] else ""}
+            ]
+        })
+
     print(json.dumps(output_data, ensure_ascii=False))
     print(f"\n  Saved: {json_path}", file=sys.stderr)
     print(f"  Session ID: {session_id}", file=sys.stderr)
     print(f"  Exchanges: {len(exchanges)}", file=sys.stderr)
-    print(f"  Speakers: {list(speaker_map.values()) if speaker_map else 'None'}", file=sys.stderr)
 
 except Exception as e:
     error_exit("An unexpected error occurred", traceback.format_exc(), session_id)
