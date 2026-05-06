@@ -41,6 +41,7 @@ class FirebaseLogger:
                 print(f"✅ Synced exchange {i + 1}: Question='{line1}', Answer='{line2}', AnswerTimestampMs={answer_timestamp}")
                 
                 time.sleep(0.5)
+            self.db.collection("emotion").document("current").update({"transcribed": True})
                 
         except Exception as e:
             print(f"❌ Firebase Transcription Sync Failed: {e}")

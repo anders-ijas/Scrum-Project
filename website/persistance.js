@@ -45,7 +45,8 @@ export async function inita() {
         emotion: model.emotion,
         rawInput: model.rawInput,
         dataStream: model.dataStream,
-        sessionID: sessionID
+        sessionID: sessionID,
+        transcribed: false
     };
     return setDoc(doc(db, "emotion", "current"), data);
 }
