@@ -9,7 +9,7 @@ export function HistoryView(props) {
           <div key={index} className="history-entry">
             <div className="entry-step adult">
               <div className="avatar adult">
-                {/* adult icon svg */}
+                👤
               </div>
               <div className="step-content">
                 <span className="step-label adult">STEG 1: VUXEN SÄGER</span>
@@ -26,7 +26,7 @@ export function HistoryView(props) {
             </div>
 
             <div className="emotion-row">
-              <span className="emotion-label">Känsla:</span>
+              <span className="emotion-label">När du sa detta kände den vuxne:</span>
               <span className="emotion-badge">{entry.emotion}</span>
             </div>
           </div>

@@ -81,13 +81,14 @@ function updateModelFromFirestore(data) {
     const accuracy = String(data.accuracy ?? "").trim();
     const parsedEmotion = parseEmotion(String(data.emotion || data.emotion || "").trim());
     const emotionColor = parseColorBgr(data.colorBgr);
-
+    const isTranscribed = !!data.transcribed;
     if (
         question === reactiveModel.question &&
         answer === reactiveModel.answer &&
         accuracy === reactiveModel.accuracy &&
         parsedEmotion === reactiveModel.emotion &&
-        emotionColor === reactiveModel.emotionColor
+        emotionColor === reactiveModel.emotionColor&&
+        isTranscribed === reactiveModel.transcribed
     ) {
         return;
     }
@@ -101,7 +102,7 @@ function updateModelFromFirestore(data) {
     reactiveModel.setCurrentAccuracy(accuracy);
     reactiveModel.setCurrentEmotion(parsedEmotion);
     reactiveModel.setCurrentEmotionColor(emotionColor);
-    reactiveModel.setTranscribed(data.transcribed);
+    reactiveModel.setTranscribed(isTranscribed);
     if (reactiveModel.dataStream != 2) {
         reactiveModel.setDataStream(1);
     }

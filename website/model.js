@@ -8,7 +8,7 @@ export const model = {
     emotionColor: "",
     rawInput: "",
     dataStream:0,
-    transcribed: true,
+    transcribed: false,
     latestSnapshot: {
         question : "",
         answer: "",

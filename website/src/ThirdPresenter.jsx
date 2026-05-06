@@ -2,6 +2,7 @@ import { observer } from "mobx-react-lite";
 import { useState, useEffect } from "react";
 import { historyMatch } from "../persistance.js";
 import { HistoryView } from "./historyView.jsx";
+import { parseEmotion } from "../util.js"; // <-- ADDED IMPORT
 
 export const ThirdPresenter = observer(function ThirdPresenter(props) {
     const [list, setList] = useState([]);
@@ -12,7 +13,6 @@ export const ThirdPresenter = observer(function ThirdPresenter(props) {
                 const docs = await historyMatch();
                 const archivedDocs = docs.filter(doc => doc.archived);
 
-                // --- CHANGED: Simple time fetcher since everything is in ms now ---
                 const getTime = (doc) => {
                     if (doc.answerTimestampMs) return Number(doc.answerTimestampMs);
                     if (doc.emotionTimestamp) return Number(doc.emotionTimestamp);
@@ -36,14 +36,15 @@ export const ThirdPresenter = observer(function ThirdPresenter(props) {
                         return eTime > previousQaTime && eTime <= currentQaTime;
                     });
 
-                    const finalEmotion = emotionsInRange.length > 0 
+                    const rawEmotion = emotionsInRange.length > 0 
                         ? emotionsInRange[emotionsInRange.length - 1].emotion 
                         : (qa.emotion || "😐");
 
                     return {
                         question: qa.question,
                         answer: qa.answer,
-                        emotion: finalEmotion
+                        // <-- TRANSLATION APPLIED HERE
+                        emotion: parseEmotion(rawEmotion) 
                     };
                 });
 
