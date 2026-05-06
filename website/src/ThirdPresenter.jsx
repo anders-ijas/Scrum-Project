@@ -33,7 +33,7 @@ export const ThirdPresenter = observer(function ThirdPresenter(props) {
 
                     const emotionsInRange = emotionEvents.filter(e => {
                         const eTime = getTime(e);
-                        return eTime > previousQaTime && eTime <= currentQaTime;
+                        return eTime > previousQaTime + 2000 && eTime <= currentQaTime + 2000;
                     });
 
                     const rawEmotion = emotionsInRange.length > 0 
