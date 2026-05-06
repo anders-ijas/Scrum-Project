@@ -22,6 +22,10 @@ firebase_logger = FirebaseLogger("../Integration/service-account.json")
 flag = True
 
 
+# --- STREAM MODE VARIABLE ---
+# Set to "local" for your PC webcam or "pi" for the Raspberry Pi stream
+STREAM_MODE = "pi"
+
 
 
 # Convolutional Neural Network with layering and weights from VGG19 with further image classification training on the FER13 Dataset.
@@ -191,11 +195,28 @@ def to_row(color, all_strengths):
     frame_data.append(row)
 
 
-def CameraStream(name,timestamp, record_flag_path=None):
+def CameraStream(name, timestamp, record_flag_path=None):
     global session_start_time
     global flag
+    global display_emotion  # Pulling this in to draw the text on skipped frames
     firebase_logger.get_active_session_id()
-    camera = cv2.VideoCapture(0)
+    
+    # --- STEP 1 & 2: STREAM ROUTING AND BUFFER LIMIT ---
+    if STREAM_MODE == "pi":
+        print("[*] Connecting to Raspberry Pi video stream...")
+        camera_source = "tcp://10.0.0.2:8160"
+    else:
+        print("[*] Using local webcam...")
+        camera_source = 0
+        
+    camera = cv2.VideoCapture(camera_source)
+    camera.set(cv2.CAP_PROP_BUFFERSIZE, 1) # Force OpenCV to drop old frames
+    
+    if not camera.isOpened():
+        print(f"[!] Error: Could not open video source '{camera_source}'")
+        return
+    # ---------------------------------------------------
+
     frame_width = int(camera.get(cv2.CAP_PROP_FRAME_WIDTH))
     frame_height = int(camera.get(cv2.CAP_PROP_FRAME_HEIGHT))
     four_cc = cv2.VideoWriter_fourcc(*"XVID")
@@ -218,20 +239,44 @@ def CameraStream(name,timestamp, record_flag_path=None):
     session_start_time = time.time()
     print("[*] Recording started.")
 
+    # --- STEP 3: FRAME SKIPPING VARIABLES ---
+    frame_counter = 0                 
+    process_every_n_frames = 20        # Processes AI on 1 frame, skips the next 2
+    last_known_emotions = {}          # Dictionary to cache colors, strengths, and text
+    # ----------------------------------------
+
     while True:
         ret, frame = camera.read()
         if not ret:
             continue
-
+        
+        frame_counter += 1
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         faces = haarcascade.detectMultiScale(gray, scaleFactor=1.3, minNeighbors=5, minSize=(96, 96))
 
         for num, (x, y, w, h) in enumerate(faces):
-            face = frame[y:y+h, x:x+w]
+            # Create a basic ID to track faces between frames
+            face_id = f"face_{num}" 
 
-            max_color, all_strengths = faceRec(face, name, frame, x, y, w, h)
-
-            to_row(max_color, all_strengths)
+            # Only run the heavy models if it's the Nth frame OR a newly detected face
+            if frame_counter % process_every_n_frames == 0 or face_id not in last_known_emotions:
+                face = frame[y:y+h, x:x+w]
+                
+                # faceRec handles the prediction AND draws the bounding box/text
+                max_color, all_strengths = faceRec(face, name, frame, x, y, w, h)
+                
+                # Save these results in our cache so we can use them on the skipped frames
+                last_known_emotions[face_id] = (max_color, all_strengths, display_emotion)
+                
+                # Log data to firebase and arrays
+                to_row(max_color, all_strengths)
+            
+            else:
+                # SKIPPED FRAME: Do not run AI models. Just draw the cached graphics.
+                max_color, _, cached_emotion = last_known_emotions[face_id]
+                
+                cv2.rectangle(frame, (x, y), (x+w, y+h), max_color, 2)
+                cv2.putText(frame, f"{name}: {cached_emotion}", (x, y - 10 if y - 10 > 20 else y + h + 25), cv2.FONT_HERSHEY_SIMPLEX, 0.9, max_color, 2)
 
         out.write(frame)
         cv2.imshow('Camera', frame)

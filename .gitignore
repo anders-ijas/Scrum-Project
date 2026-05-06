@@ -5,3 +5,4 @@ service-account.json
 /website/venv
 /integration/transcription
 *.pyc
+*.avi
