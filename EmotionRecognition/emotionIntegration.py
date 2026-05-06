@@ -85,7 +85,7 @@ class FirebaseLogger:
         except Exception as e:
             print(f"❌ Emotion archive failed: {e}")
     
-    def update_current_emotion(self, label, score, emotion_timestamp=None, color_bgr):
+    def update_current_emotion(self, label, score, emotion_timestamp=None, color_bgr=None):
         current_time = time.time()
         emotion_str = str(label)
         accuracy_str = str(round(float(score) * 100, 2))
