@@ -34,6 +34,7 @@ class FirebaseLogger:
         """
         Sends all exchanges (question/answer pairs) to Firebase, with a small sleep between each pair.
         """
+        self.db.collection("emotion").document("current").update(update_data)
         try:
             exchanges = output_data.get("exchanges", [])
             

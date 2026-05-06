@@ -12,7 +12,7 @@ from emotionIntegration import FirebaseLogger
 
 warnings.filterwarnings("ignore", category=UserWarning, module="pyannote.audio.core.io")
 
-fb_logger = FirebaseLogger("../Integration/service-account.json") 
+fb_logger = FirebaseLogger("../integration/service-account.json") 
 load_dotenv()
 
 LANGUAGE   = "sv"
@@ -244,10 +244,8 @@ try:
     if exchanges:
         first = exchanges[0]
         fb_logger.sync_conversation_start({
-            "segments": [
-                {"text": first["question"]["text"]},
-                {"text": first["answer"]["text"] if first["answer"] else ""}
-            ]
+            "exchanges": exchanges,  
+            "sessionId": session_id
         })
 
     print(json.dumps(output_data, ensure_ascii=False))
